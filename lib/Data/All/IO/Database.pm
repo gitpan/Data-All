@@ -1,6 +1,6 @@
 package Data::All::IO::Database;
 
-#   $Id: Database.pm,v 1.1.2.2.2.2.2.1.6.1.8.3 2004/04/28 23:51:43 dgrant Exp $
+#   $Id: Database.pm,v 1.1.2.2.2.2.2.1.6.1.8.10 2004/05/06 15:47:45 dgrant Exp $
 
 
 use strict;
@@ -11,7 +11,7 @@ use DBI;
 
 use vars qw($VERSION);
 
-$VERSION = 0.11;
+$VERSION = 0.14;
 
 internal 'DBH';
 internal 'STH';
@@ -21,8 +21,16 @@ internal 'STH';
 sub open($)
 {
     my $self = shift;
+    my $query = $self->path()->[3];
 
     $self->_create_dbh();               #   Open DB connection
+    
+    if ($query =~ /^SELECT/i)
+    {
+        $self->__STH($self->__DBH()->prepare($query));
+        $self->__STH()->execute();
+        $self->_extract_fields();
+    }
     
     return $self->is_open(1);
 }
@@ -31,7 +39,9 @@ sub close()
 {
     my $self = shift;
 
-    $self->__DBH()->commit();  
+    $self->__STH()->finish(), $self->__DBH()->commit()
+        if ($self->__STH());
+
     $self->__DBH()->disconnect();
     $self->is_open(0);
     
@@ -44,31 +54,25 @@ sub nextrecord() {  $_[0]->__STH()->fetchrow_hashref() }
 sub getrecord_array() 
 { 
     my $self = shift; 
-    my $record = $self->getrecords(1);
+    my $record = $self->__STH()->fetchrow_arrayref();
+
     return wantarray ? @{$record} : $record;
 }
 
 sub getrecords() 
 { 
     my $self = shift;
-    my $l1 = shift || '';
-    my $l2 = shift || '';
-    my $query = $self->path()->[3];
     
-    $query .= " LIMIT $l1" if ($l1);
-    $query .= ", $l2" if ($l2);
-    
-    $self->__STH($self->__DBH()->prepare($query));
-    $self->__STH()->execute();
-    $self->_extract_fields();
-    
-    return [] unless ($self->__STH()->rows);
+    return undef unless ($self->__STH()->rows);
     
     my (@records, $ref);
-    while ($ref = $self->__STH()->fetchrow_hashref())
+    while ($ref = $self->__STH()->fetchrow_arrayref())
     {
         push (@records, $ref);
     }
+
+    #   Close the statement handle
+    #$self->__STH()->finish();
 
     return wantarray ? @records : \@records;
     
@@ -90,6 +94,8 @@ sub putrecord($;\%)
     my ($record, $options) = @_;
     my @vars;
    
+    #warn $self->path()->[3];
+    
     $self->__STH($self->__DBH()->prepare($self->path()->[3]))
         unless $self->__STH();
         
@@ -121,8 +127,36 @@ sub putrecords()
     {
         $self->putrecord($rec, $options);
     }
+    
+    #   Close the statement handle
+    $self->__STH()->finish();
+    
 }
 
+sub count()
+#   TODO: Refactor this count() functionality.
+#   What about INSERT queries. We could keep track of how many were
+#   successfully inserted. 
+{
+    my $self = shift;
+    my $query = $self->path()->[3];
+    my $count;
+    
+    return $count unless($query =~ /^\s*?SELECT/);
+    
+    $query =~ s/SELECT\s.+?\sFROM/SELECT COUNT(*) FROM/;
+    
+    $self->__STH($self->__DBH()->prepare($query))
+        unless ($self->__STH());
+    
+    $self->__STH()->execute();
+    
+    $count = ($self->__STH()->fetchrow_array())[0];
+    
+    $self->__STH()->finish();
+    
+    return $count;
+}
 
 sub _create_dbh()
 {
@@ -168,6 +202,15 @@ sub _extract_fields()
 
 
 #   $Log: Database.pm,v $
+#   Revision 1.1.2.2.2.2.2.1.6.1.8.10  2004/05/06 15:47:45  dgrant
+#   *** empty log message ***
+#
+#   Revision 1.1.2.2.2.2.2.1.6.1.8.8  2004/05/05 16:46:49  dgrant
+#   - Misc changes I should have commited on Friday when I made them.
+#
+#   Revision 1.1.2.2.2.2.2.1.6.1.8.6  2004/04/29 22:25:01  dgrant
+#   *** empty log message ***
+#
 #   Revision 1.1.2.2.2.2.2.1.6.1.8.3  2004/04/28 23:51:43  dgrant
 #   - Added transaction support
 #

@@ -1,7 +1,7 @@
 package Data::All::Format::Fixed;
 
 
-#   $Id: Fixed.pm,v 1.1.1.1.8.1 2004/04/16 17:10:33 dgrant Exp $
+#   $Id: Fixed.pm,v 1.1.1.1.8.3 2004/05/06 15:47:45 dgrant Exp $
 
 
 use strict;
@@ -12,11 +12,11 @@ use Data::All::Format::Base '-base';
 use vars qw(@EXPORT $VERSION);
 
 @EXPORT = qw();
-$VERSION = 0.10;
+$VERSION = 0.11;
 
 
 attribute 'lengths' => [];
-attribute 'break'   => "\n";
+attribute 'break'   => "\n";    #   currently useless b/c it's hardcoded below
 
 
 sub expand($);
@@ -41,7 +41,8 @@ sub contract(\@)
     my $template = $self->pack_template();
     #print Dumper($values) unless($values->[4]);
     
-    return pack($template, @{ $values }).$self->break();
+    #   NOTE: Line break is hardcoded to \n
+    return pack($template, @{ $values })."\n";
 }
 
 
@@ -71,6 +72,9 @@ sub pack_template()
 
 
 #   $Log: Fixed.pm,v $
+#   Revision 1.1.1.1.8.3  2004/05/06 15:47:45  dgrant
+#   *** empty log message ***
+#
 #   Revision 1.1.1.1.8.1  2004/04/16 17:10:33  dgrant
 #   - Merging libperl-016 changes into the libperl-1-current trunk
 #

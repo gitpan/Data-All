@@ -1,6 +1,6 @@
 package Data::All::IO::Plain;
 
-#   $Id: Plain.pm,v 1.1.2.1.2.1.2.1.6.2.4.1.4.2 2004/04/21 23:01:13 dgrant Exp $
+#   $Id: Plain.pm,v 1.1.2.1.2.1.2.1.6.2.4.1.4.6 2004/05/06 15:47:45 dgrant Exp $
 
 #   BUG: A leading delimiter (i.e. a blank first column) will fuck it up
 
@@ -12,9 +12,10 @@ use IO::All;
 use FileHandle;
 
 
-our $VERSION = 0.10;
+our $VERSION = 0.11;
 
 internal 'IO';
+internal 'fh';
 
 sub create_path()
 {
@@ -27,6 +28,9 @@ sub open($)
     my $self = shift;
     warn " -> Opening ", $self->create_path(), ' for ', $self->ioconf()->{'perm'};
     
+    die("The file: ".$self->create_path()." does not exist")
+        unless (-f $self->create_path());
+    
     #   We create out own filehandle for better read/write control
     my $fh = new FileHandle($self->create_path(), $self->ioconf()->{'perm'});
     my $IO = io(-file_handle => $fh, '-tie');
@@ -34,6 +38,8 @@ sub open($)
     $IO->autoclose(1);
     
     $self->__IO( $IO );
+    $self->__fh( $fh );
+    
     $self->is_open(1);
 
     $self->_extract_fields();             #   Initialize field names 
@@ -84,6 +90,7 @@ sub getrecord_array()
 { 
     my ($self, $with_original) = @_;
     my $raw;
+    
     return undef unless ($raw = $self->nextrecord());
     
     #   We return the original record first b/c if we do it
@@ -91,8 +98,6 @@ sub getrecord_array()
     my $rec_arrayref = ($with_original)
         ? [$raw, $self->__FORMAT()->expand($raw)]
         : [$self->__FORMAT()->expand($raw)];
-        
-    
     
     return !wantarray ? $rec_arrayref : @{ $rec_arrayref };
 }
@@ -107,6 +112,7 @@ sub putrecord($)
 {
     my $self = shift;
     my $record = shift;
+
     $self->__IO()->print($self->hash_to_record($record));
 }
 
@@ -118,10 +124,28 @@ sub _extract_fields()
     $self->fields([$self->getrecord_array(0)]);
 }
 
-#sub count()     { return system('wc', '-l', $_[0]->create_path()) }
+sub count()     
+{ 
+    my $self = shift;
+    my $count;
+    
+    $count += tr/\n/\n/ while sysread($self->__fh(), $_, 2 ** 20);
+    
+    return $count;
+    #return system('wc', '-l', $_[0]->create_path()); 
+}
 sub _next()      { $_[0]->__curpos( $_[0]->__curpos() + 1) }
 
 #   $Log: Plain.pm,v $
+#   Revision 1.1.2.1.2.1.2.1.6.2.4.1.4.6  2004/05/06 15:47:45  dgrant
+#   *** empty log message ***
+#
+#   Revision 1.1.2.1.2.1.2.1.6.2.4.1.4.3  2004/04/29 22:03:22  dgrant
+#   - Added count() functionality exposed through Data:All so we can get the
+#   line count in files and the COUNT(*) for SELECT queries
+#   - Fixed a database disconnection bug (caused queries to rollback)
+#   - Statement handled are now finished too
+#
 #   Revision 1.1.2.1.2.1.2.1.6.2.4.1.4.2  2004/04/21 23:01:13  dgrant
 #   - Added a quick fix for converting DOS line enders to UNIX. This will need
 #   to be reworked into a final solution.

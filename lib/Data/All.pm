@@ -2,7 +2,7 @@ package Data::All;
 
 #   Data::All - Access to data in many formats from many places
 
-#   $Id: All.pm,v 1.1.1.1.8.9 2004/04/28 23:59:09 dgrant Exp $
+#   $Id: All.pm,v 1.1.1.1.8.18 2004/05/06 19:28:39 dgrant Exp $
 
 use strict;
 use warnings;
@@ -11,15 +11,17 @@ use warnings;
 use Data::All::Base '-base';    #   Spiffy
 use Data::All::IO;
 
-our $VERSION = 0.023;
+our $VERSION = 0.025;
 our @EXPORT = qw(collection);
 
 
 ##  Interface
 sub show_fields;    #   returns an arrayref of field names
 sub collection;     #   A shortcut for open() and read()
+sub getrecord;
 sub is_open;
 sub convert;        #   Change formats
+sub count;          #   Record count
 sub close;
 sub read;
 sub open;
@@ -36,10 +38,61 @@ attribute 'format';
 attribute 'ioconf';
 attribute 'path'; 
 
+##  Internal Strucutre
+internal 'factory_IO' => {
+    plain   => 'Data::All::IO::Plain',
+    xml     => 'Data::All::IO::XML',
+    db      => 'Data::All::IO::Database',
+    ftp     => 'Data::All::IO::FTP'
+};
+
+internal 'factory_Format' => {
+    delim   => 'Data::All::Format::Delim',
+    fixed   => 'Data::All::Format::Fixed',
+    hash    => 'Data::All::Format::Hash' 
+};
+
 
 #   A Spiffy thing
 sub paired_arguments    { qw(path ioconf format filters profile fields moniker) }
 sub boolean_arguments   { qw() }
+
+sub count(;$)
+#   get a record count
+{
+    my $self = shift;
+    my $moniker = shift || $self->moniker;
+    
+    $self->open() unless ($self->is_open($moniker));
+    return $self->__DATA()->{$moniker}->count();
+}
+
+
+sub getrecord(;$$)
+#   Get a single, consecutive record
+{
+    my $self = shift;
+    my $type = shift || 'hash';
+    my $moniker = shift || $self->moniker;
+    my $meth = 'getrecord_' . $type;
+    my $record;
+    
+    $record = ($self->__DATA()->{$moniker}->can($meth))
+        ? $self->__DATA()->{$moniker}->$meth()
+        : undef;
+    
+    return $record;
+}
+
+sub putrecord()
+#   Put a single, consecutive record
+{
+    my $self = shift;
+    my $record = shift || return undef;
+    my $moniker = shift || $self->moniker;
+    
+    $self->__DATA()->{$moniker}->putrecord()
+}
 
 
 sub is_open(;$) 
@@ -47,7 +100,7 @@ sub is_open(;$)
     my $self = shift;
     my $moniker = shift || $self->moniker;
     
-    return $self->__DATA()->{$moniker}->is_open()
+    return $self->__DATA()->{$moniker}->is_open();
 }
 
 sub collection(%)
@@ -110,16 +163,18 @@ sub convert
     my $self = shift;
     my ($args, $from, $to, $from_records, $moniker);
     
+    #   TODO: need error detection
+    
     #   We will accept both a hash as well as a hashref
     $args = (ref($_[0]) eq 'HASH') ? $_[0] : ({ @_ });      # <--- ARGS
 
     #   TODO: Define and apply defaults somewhere else.
-    $args->{'print_fields'} = 1;
-    $args->{'atomic'} = 0;
+    $args->{'print_fields'} = 1 unless(exists($args->{'print_fields'}));
+    $args->{'atomic'} = 0 unless(exists($args->{'atomic'}));
 
     $moniker = $self->moniker;
     
-    if (!exists($args->{'from'})) {
+    if (!exists($args->{'from'}) && exists($args->{'to'})) {
     #   input: 'to' => hashref only
         $from = $self->__DATA()->{$moniker};
         $from->open();
@@ -131,15 +186,24 @@ sub convert
         $from->open();
     }
     
+    #   We will assume the current configuration is for output
+    #   if we don't recieve a from or a to. 
+    $to = $self->__DATA()->{$moniker}
+        if (!exists($args->{'from'}) && !exists($args->{'to'}));
+
     $self->_parse_args($args->{'to'});
     $to = $self->_load_IO($args->{'to'});
     $to->open();
+
+    # TODO: Get fields from db SELECT before we copy to the $to->fields()
     
     #   Use the from's field names if the to's has none
     $to->fields($from->fields)    unless ($to->fields() && $#{ $to->fields() });
-
+    print Dumper($args);
     #   Print the field names into the to
-    $to->putfields()   unless (!$args->{'print_fields'});
+    #   TODO: If the field list is in the from collection, then the
+    #   fields will appear twice in the to file. 
+    $to->putfields()   if ($args->{'print_fields'});
     
     if ($args->{'atomic'} == 1)
     #   Convert data in a wholesome fashion (rather than piecemeal)
@@ -149,8 +213,10 @@ sub convert
             : return $to->putrecords([$from->getrecords()], $args)
     }
     
+    
     #   We are given an arrayref of (hashref) records to put to to. 
     #   There must be a better way to do this (:?)
+    #   NOTE: A Data::All::IO::Hash type module would make this cleaner
     if (ref($args->{'from'}) eq 'ARRAY') {
 
         foreach (@{ $args->{'from'} }) {
@@ -166,6 +232,7 @@ sub convert
     
     $from->close();
     $to->close();
+   
     
     return 1;
 }
@@ -182,14 +249,21 @@ sub write(;$$)
 
 
 sub _load_IO(\%)
+#   Load an instance of Data::All::IO::? to memory
 {
     my $self = shift;
     my ($ioconf, $format, $path, $fields) = @{ shift() }{'ioconf','format','path','fields'};
     
-    return Data::All::IO->new($ioconf->{'type'}, 
-        { ioconf => $ioconf, format => $format, path=>$path, fields => $fields});
+    my $IO = Data::All::IO->new($ioconf->{'type'}, 
+        { 
+            ioconf  => $ioconf, 
+            format  => $format, 
+            path    => $path, 
+            fields  => $fields
+        });
+        
+    return $IO;
 }
-
 
 sub _parse_args()
 #   Convert arrayref args into hashref, process determinable values, 
@@ -200,19 +274,18 @@ sub _parse_args()
     my $self = shift;
     my $args = shift;
    
-    #   Make sure path is an array ref
-    $args->{'path'} = [$args->{'path'}]  if (ref($args->{'path'}) ne 'ARRAY');
-        
     #   TODO: Allow collection('filename.csv', 'profile'); usage
     $self->_apply_profile_to_args($args);
     
-    $args->{'path'} = [$args->{'path'}]
-        unless (ref($args->{'path'}) eq 'ARRAY');
+    #   Make sure path is an array ref
+    $args->{'path'} = [$args->{'path'}]  if (ref($args->{'path'}) ne 'ARRAY');
     
     for my $a (keys %{ $self->__default() })
     #   Apply default values to data collection configuration. Amplify arrayref 
     #   configs into hashref configs using the a2h_templates where appropriate.
     { 
+        next if $a eq 'path';
+        
         if (ref($args->{$a}) eq 'ARRAY')
         {
             my (%hash, $templ);
@@ -229,8 +302,8 @@ sub _parse_args()
     
     $args->{'moniker'} = ($args->{'ioconf'}->{'type'} ne 'db')
         ? join('', @{ $args->{'path'} })
-        #: $args->{'path'}->[0];
         : '_';
+    
 }
 
 sub _apply_profile_to_args(\%)
@@ -285,6 +358,11 @@ sub init()
     $self->_parse_args($args); 
     populate $self => $args;
     
+    foreach my $type (keys %{ $self->__factory_IO })
+    {
+        Data::All::IO->register_factory_type($type, $self->__factory_IO->{$type});
+    }
+    
     #   TODO: Allow me to not have to instantiate without creating a moniker
     #   TODO: Allow me to pass moniker as the first argument
 
@@ -318,6 +396,7 @@ internal 'a2h_template'  =>
     'format.delim'      => ['type','break','delim','quote','escape'],
     'format.fixed'      => ['type','break','lengths'],
     'ioconf.plain'      => ['type','perm','with_original'],
+    'ioconf.ftp'         => ['type','perm','with_original'],
     'ioconf.db'         => ['type','perm','with_original']
 };
 
@@ -343,8 +422,14 @@ internal 'default'     =>
 
 
 #   $Log: All.pm,v $
-#   Revision 1.1.1.1.8.9  2004/04/28 23:59:09  dgrant
+#   Revision 1.1.1.1.8.18  2004/05/06 19:28:39  dgrant
 #   *** empty log message ***
+#
+#   Revision 1.1.1.1.8.10  2004/04/29 22:03:21  dgrant
+#   - Added count() functionality exposed through Data:All so we can get the
+#   line count in files and the COUNT(*) for SELECT queries
+#   - Fixed a database disconnection bug (caused queries to rollback)
+#   - Statement handled are now finished too
 #
 #   Revision 1.1.1.1.8.4  2004/04/24 01:22:35  dgrant
 #   - Added CPAN documentation to Data::All and updated the examples to be

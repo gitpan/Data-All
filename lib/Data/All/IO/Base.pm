@@ -2,7 +2,7 @@ package Data::All::IO::Base;
 
 #   Base package for all format modules
 
-#   $Id: Base.pm,v 1.1.1.1.8.3 2004/04/28 22:50:47 dgrant Exp $
+#   $Id: Base.pm,v 1.1.1.1.8.6 2004/05/06 15:47:45 dgrant Exp $
 
 use strict;
 use warnings;
@@ -10,7 +10,11 @@ use warnings;
 use Data::All::Base '-base';                            #   Spiffy
 use Data::All::Format;
 
-our $VERSION = 0.10;
+our $VERSION = 0.12;
+
+#   Interface
+sub count();
+sub array_to_hash(\@);
 
 attribute 'format';
 attribute 'fields';
@@ -29,7 +33,7 @@ sub _add_field()
     $self->__added_fields()->{'_ORGINAL'}++;
 }
 
-sub array_to_hash()
+sub array_to_hash(\@)
 {
     my ($self, $record) = @_;
     my %hash;
@@ -53,6 +57,7 @@ sub getrecord_hash()
 {
     my $self = shift;
     my $rec = $self->getrecord_array($self->ioconf->{'with_original'});
+
     return ($rec)
         ?  $self->array_to_hash($rec)
         : undef;
@@ -134,6 +139,15 @@ internal 'added_fields'         => {};
 
 
 #   $Log: Base.pm,v $
+#   Revision 1.1.1.1.8.6  2004/05/06 15:47:45  dgrant
+#   *** empty log message ***
+#
+#   Revision 1.1.1.1.8.4  2004/04/29 22:03:21  dgrant
+#   - Added count() functionality exposed through Data:All so we can get the
+#   line count in files and the COUNT(*) for SELECT queries
+#   - Fixed a database disconnection bug (caused queries to rollback)
+#   - Statement handled are now finished too
+#
 #   Revision 1.1.1.1.8.3  2004/04/28 22:50:47  dgrant
 #   - Added the option to process files record by record rather than atomically
 #

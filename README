@@ -1,7 +1,6 @@
-Data-All version 0.023
-=====================
-
+------------------------------------------------------------
 Data::All - Access to data in many formats from many places
+------------------------------------------------------------
 
 INSTALLATION
 
@@ -16,8 +15,8 @@ DEPENDENCIES
 
 IO::All
 Spiffy
-Data::Dumper
 Text::Parsewords
+Class::Factory
 
 
 COPYRIGHT AND LICENCE

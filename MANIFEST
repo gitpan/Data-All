@@ -17,3 +17,5 @@ MANIFEST
 META.yml			Module meta-data (added by MakeMaker)
 README
 t/Data-All.t
+t/sample.csv
+t/sample.fixed

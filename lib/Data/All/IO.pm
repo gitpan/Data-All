@@ -1,18 +1,13 @@
 package Data::All::IO;
 
-#   $Id: IO.pm,v 1.1.1.1.8.1 2004/04/16 17:10:33 dgrant Exp $
+#   $Id: IO.pm,v 1.1.1.1.8.2 2004/05/05 16:46:49 dgrant Exp $
 
 use strict;
 
 use base qw( Class::Factory );
 
-
-#   TODO: Allow external code to modify this list
-Data::All::IO->register_factory_type( xml   => 'Data::All::IO::XML' );
-Data::All::IO->register_factory_type( plain => 'Data::All::IO::Plain' );
-Data::All::IO->register_factory_type( db    => 'Data::All::IO::Database' );
-
-
+#   NOTE: I need to be given factory type before I am useful
+#   i.e. Data::All::IO->register_factory_type( pkg => 'Data::All::IO::Pkg' );
 
 sub new()
 {
@@ -25,9 +20,10 @@ sub new()
 }
 
 
-
-
 #   $Log: IO.pm,v $
+#   Revision 1.1.1.1.8.2  2004/05/05 16:46:49  dgrant
+#   - Misc changes I should have commited on Friday when I made them.
+#
 #   Revision 1.1.1.1.8.1  2004/04/16 17:10:33  dgrant
 #   - Merging libperl-016 changes into the libperl-1-current trunk
 #
