@@ -11,7 +11,7 @@ use warnings;
 use Data::All::Base '-base';    #   Spiffy
 use Data::All::IO;
 
-our $VERSION = 0.022;
+our $VERSION = 0.023;
 our @EXPORT = qw(collection);
 
 
