@@ -5,7 +5,7 @@
 #########################
 
 use Test::More;
-BEGIN { plan tests => 5 };
+BEGIN { plan tests => 4 };
 use Data::All;
 ok(1, "Module loaded"); 
 
@@ -25,7 +25,7 @@ my %outfile = (
         ioconf  => ['plain', 'w']
 );
 
-my $da = Data::All->new(\%infile);
+my $da = Data::All->new(from =>\%infile, to=> \%outfile);
 
 $da->open();
 
@@ -33,7 +33,7 @@ my $rec = $da->read();
 
 ok($#{ $rec } == 2, "Check record count");
 ok(exists($rec->[0]->{'name'}), "Check field names");
-ok($da->convert(to => \%outfile), "Convert to fixed-width (sample.fixed)");
 
+$da->convert();
 
 ok(1);

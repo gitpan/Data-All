@@ -1,13 +1,15 @@
 package Data::All::Format;
 
-#   $Id: Format.pm,v 1.1.1.1.8.2 2004/05/05 16:46:48 dgrant Exp $
+#   $Id: Format.pm,v 1.1.1.1.8.3 2004/05/15 20:08:29 dgrant Exp $
 
 use strict;
 
 #   CPAN Modules
 use base qw( Class::Factory );
 
-#   TODO: Give Data::All control of creating the Format objects. It can send them to IO 
+our $VERSION = 0.10;
+
+#   TODO: Give Data::All control of creating the Format objects. It should send them to IO 
 
 #   TODO: Allow external code to add new instance objects
 Data::All::Format->register_factory_type( delim     => 'Data::All::Format::Delim' );
@@ -34,6 +36,9 @@ sub new()
 
 
 #   $Log: Format.pm,v $
+#   Revision 1.1.1.1.8.3  2004/05/15 20:08:29  dgrant
+#   - Added version number
+#
 #   Revision 1.1.1.1.8.2  2004/05/05 16:46:48  dgrant
 #   - Misc changes I should have commited on Friday when I made them.
 #

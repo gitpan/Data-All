@@ -2,8 +2,10 @@ package Data::All;
 
 #   Data::All - Access to data in many formats from many places
 
-#   $Id: All.pm,v 1.1.1.1.8.21 2004/05/10 16:29:49 dgrant Exp $
+#   $Id: All.pm,v 1.1.1.1.8.26 2004/05/17 22:34:09 dgrant Exp $
 
+#   TODO: Create Data::All::IO::Hash for internal storage
+    
 use strict;
 use warnings;
 #use diagnostics;
@@ -11,7 +13,7 @@ use warnings;
 use Data::All::Base '-base';    #   Spiffy
 use Data::All::IO;
 
-our $VERSION = 0.026;
+our $VERSION = 0.031;
 our @EXPORT = qw(collection);
 
 
@@ -19,6 +21,7 @@ our @EXPORT = qw(collection);
 sub show_fields;    #   returns an arrayref of field names
 sub collection;     #   A shortcut for open() and read()
 sub getrecord;
+sub putrecord;
 sub is_open;
 sub convert;        #   Change formats
 sub count;          #   Record count
@@ -26,36 +29,89 @@ sub close;
 sub read;
 sub open;
 
-spiffy_constructor 'da';
-
 
 ##  External Structure
-attribute 'moniker';
-attribute 'filters';
-attribute 'profile';
-attribute 'fields';
-attribute 'format';
-attribute 'ioconf';
-attribute 'path'; 
+attribute         'from';
+attribute           'to';
+attribute 'print_fields'        => 1;
+attribute       'atomic'        => 0;
 
-##  Internal Strucutre
-internal 'factory_IO' => {
-    plain   => 'Data::All::IO::Plain',
-    xml     => 'Data::All::IO::XML',
-    db      => 'Data::All::IO::Database',
-    ftp     => 'Data::All::IO::FTP'
+
+
+#   INTERNAL ATTRIBUTES
+sub internal;
+
+#   Contains Data::All::IO::* object by moniker
+internal 'collection'        => {};  
+
+internal 'profile'     =>      
+#   Hardcoded/commonly used format configs
+{
+    csv     => ['delim', "\n", ',', '"', '\\'],
+    tab     => ['delim', "\n", "\t", '', '']
 };
 
-internal 'factory_Format' => {
-    delim   => 'Data::All::Format::Delim',
-    fixed   => 'Data::All::Format::Fixed',
-    hash    => 'Data::All::Format::Hash' 
+internal 'a2h_template'  =>    
+#   Templates for converting arrayref configurations to 
+#   internally used, easy to handle hashref configs. See _parse_args().
+#   TODO: move this functionality into a generic arg parsing library
+{
+    'format.delim'      => ['type','break','delim','quote','escape'],
+    'format.fixed'      => ['type','break','lengths'],
+    'ioconf.plain'      => ['type','perm','with_original'],
+    'ioconf.ftp'        => ['type','perm','with_original'],
+    'ioconf.db'         => ['type','perm','with_original']
+};
+
+internal 'default'     =>
+#   Default values for configuration variables
+{
+    profile => 'csv',
+    filters => '',
+    ioconf  => 
+    { 
+        type    => 'plain', 
+        perm    => 'r', 
+        with_original => 0 
+    },
+    format =>
+    {
+        type    => 'delim'
+    }
 };
 
 
-#   A Spiffy thing
-sub paired_arguments    { qw(path ioconf format filters profile fields moniker) }
-sub boolean_arguments   { qw() }
+#   CONSTRUCTOR RELATED
+sub init()
+#   Rekindle all that we are
+{
+    my $self = shift;
+    my $args;
+    
+    return $self unless ($_[0]);
+    
+    #   Allow for hash or hashref args
+    $args = (ref($_[0]) eq 'HASH') ? $_[0] : { @_ };
+    
+    populate($self, $args);
+    
+    $self->prep_collections();
+    
+    return $self;
+}
+
+sub prep_collections()
+#   Prepare and store an instance of Data::All::IO::* for from and to configs 
+{
+    my $self = shift;
+    
+    foreach (qw(to from))
+    {
+        $self->__collection()->{$_} = $self->_load_IO($self->$_())
+            if (defined($self->$_()));
+    }
+}
+
 
 sub count(;$)
 #   get a record count
@@ -73,12 +129,11 @@ sub getrecord(;$$)
 {
     my $self = shift;
     my $type = shift || 'hash';
-    my $moniker = shift || $self->moniker;
     my $meth = 'getrecord_' . $type;
     my $record;
     
-    $record = ($self->__DATA()->{$moniker}->can($meth))
-        ? $self->__DATA()->{$moniker}->$meth()
+    $record = ($self->__collection()->{'from'}->can($meth))
+        ? $self->__collection()->{'from'}->$meth()
         : undef;
     
     return $record;
@@ -89,44 +144,44 @@ sub putrecord()
 {
     my $self = shift;
     my $record = shift || return undef;
-    my $moniker = shift || $self->moniker;
     
-    $self->__DATA()->{$moniker}->putrecord()
+    $self->__collection()->{'to'}->putrecord()
 }
 
-
-sub is_open(;$) 
-{ 
-    my $self = shift;
-    my $moniker = shift || $self->moniker;
-    
-    return $self->__DATA()->{$moniker}->is_open();
-}
 
 sub collection(%)
+#   Shorthand for creating a Data::All instance, openning, reading
+#   and closing the data source
 {
     my ($conf1, $conf2) = @_;
-
-    my $itself = new('Data::All', %{ $conf1 });
+    my ($myself, $rec);
     
-    $itself->open();
-    return $itself->read();
+    #   We can accept standard-arg style, but we will also make provisions
+    #   for a single hashref arg which we'll assume is the 'from' config
+    $myself = (ref($_[0]) ne 'HASH')
+        ? new('Data::All', @_)
+        : new('Data::All', from => $_[0]);
+        
+    $myself->open();
+    $rec = $myself->read();
+    $myself->close();
+    
+    return (!wantarray) ? $rec : @{ $rec };
 }
 
 sub open(;$)
 {
     my $self = shift;
-    my $moniker = shift || $self->moniker;
+    my $which = shift || 'from';
     
-    $self->__DATA()->{$moniker}->open();
+    $self->__collection()->{$which}->open();
     
     unless ($self->is_open())
     {
-        $self->__ERROR($self->__DATA()->{$moniker}->__ERROR());
-        warn "Cannot open ", $self->__DATA()->{$moniker}->create_path();
+        $self->__ERROR($self->__collection()->{$which}->__ERROR());
+        warn "Cannot open ", $self->__collection()->{$which}->create_path();
         die;
     }
-        
     
     return $self->is_open();
 }
@@ -134,24 +189,24 @@ sub open(;$)
 sub close(;$)
 {
     my $self = shift;
-    my $moniker = shift || $self->moniker;
-    $self->__DATA()->{$moniker}->close();
+    my $which = shift || 'from';
+    $self->__collection()->{$which}->close();
 }
 
 sub show_fields(;$)
 {
     my $self = shift;
-    my $moniker = shift || $self->moniker;
-
-    $self->__DATA()->{$moniker}->fields;
+    my $which = shift || 'from';
+    $self->__collection()->{$which}->fields();
 }
 
 sub read(;$$)
 {
     my $self = shift; 
-    my $moniker = shift || $self->moniker;
-
-    my $records = $self->__DATA()->{$moniker}->getrecords();
+    my $which = shift || 'from';
+    
+    $self->open();
+    my $records = $self->__collection()->{$which}->getrecords();
     
     return !wantarray ? $records :   @{ $records };
 }
@@ -159,94 +214,63 @@ sub read(;$$)
 sub convert
 #   Move data from one Data::All collection to another, using a simple 
 #   from (source) and to (target) metaphor
+#   TODO: need error detection
 {
     my $self = shift;
-    my ($args, $from, $to, $from_records, $moniker);
+    my ($from, $to, $bool);
     
-    #   TODO: need error detection
+    $self->init(@_);
     
-    #   We will accept both a hash as well as a hashref
-    $args = (ref($_[0]) eq 'HASH') ? $_[0] : ({ @_ });      # <--- ARGS
+    ($from, $to) = @{ $self->__collection() }{'from','to'};
 
-    #   TODO: Define and apply defaults somewhere else.
-    $args->{'print_fields'} = 1 unless(exists($args->{'print_fields'}));
-    $args->{'atomic'} = 0 unless(exists($args->{'atomic'}));
-
-    $moniker = $self->moniker;
-    
-    if (!exists($args->{'from'}) && exists($args->{'to'})) {
-    #   input: 'to' => hashref only
-        $from = $self->__DATA()->{$moniker};
-        $from->open();
-    }
-    elsif (ref($args->{'from'}) eq 'HASH') {
-    #   input: 'to' => hashref and 'from' => hashref
-        $self->_parse_args($args->{'from'});
-        $from = $self->_load_IO($args->{'from'});
-        $from->open();
-    }
-    
-    #   We will assume the current configuration is for output
-    #   if we don't recieve a from or a to. 
-    $to = $self->__DATA()->{$moniker}
-        if (!exists($args->{'from'}) && !exists($args->{'to'}));
-
-    $self->_parse_args($args->{'to'});
-    $to = $self->_load_IO($args->{'to'});
+    $from->open();
     $to->open();
-
+    
     # TODO: Get fields from db SELECT before we copy to the $to->fields()
     
     #   Use the from's field names if the to's has none
-    $to->fields($from->fields)    unless ($to->fields() && $#{ $to->fields() });
+    $to->fields($from->fields) unless ($to->fields() && $#{ $to->fields() });
  
     #   Print the field names into the to
     #   TODO: If the field list is in the from collection, then the
     #   fields will appear twice in the to file. 
-    $to->putfields()   if ($args->{'print_fields'});
+    $to->putfields()   if ($self->print_fields);
     
-    
-    
-    if ($args->{'atomic'} == 1)
+    if ($self->atomic) {
     #   Convert data in a wholesome fashion (rather than piecemeal)
-    {
-        return (ref($args->{'from'}) eq 'ARRAY')
-            ? $to->putrecords($args->{'from'}, $args)
-            : return $to->putrecords([$from->getrecords()], $args)
+        $bool = $to->putrecords([$from->getrecords()]) ;
+    }
+    else {
+    #   Convert record by record (great for large family members!!!!!!!)
+        while (my $rec = $from->getrecord_hash()) 
+        { $bool = $to->putrecord($rec) }
     }
     
-    
-    #   We are given an arrayref of (hashref) records to put to to. 
-    #   There must be a better way to do this (:?)
-    #   NOTE: A Data::All::IO::Hash type module would make this cleaner
-    if (ref($args->{'from'}) eq 'ARRAY') {
-
-        foreach (@{ $args->{'from'} }) {
-             $to->putrecord($_, $args);
-        }
-
-    } else {
-
-        while (my $rec = $from->getrecord_hash()) {
-            $to->putrecord($rec, $args);
-        }
-    }
-    
-    $from->close();
     $to->close();
-   
+    $from->close();
     
-    return 1;
+    return $bool;
 }
 
 
 sub write(;$$)
 {
     my $self = shift;
-    my $moniker = shift || $self->moniker;
+    my $which = shift || 'from';
     my ($start, $count) = (shift || 0, shift || 0); 
         
 }
+
+
+sub is_open(;$)
+{ 
+    my $self = shift;
+    my $which = shift || 'from';
+    
+    return $self->__collection()->{'from'}->is_open();
+}
+
+
 
 
 
@@ -254,7 +278,9 @@ sub _load_IO(\%)
 #   Load an instance of Data::All::IO::? to memory
 {
     my $self = shift;
-    my ($ioconf, $format, $path, $fields) = @{ shift() }{'ioconf','format','path','fields'};
+    my $args = shift;
+    $self->_parse_args($args);
+    my ($ioconf, $format, $path, $fields) = @{ $args }{'ioconf','format','path','fields'};
     
     my $IO = Data::All::IO->new($ioconf->{'type'}, 
         { 
@@ -345,96 +371,32 @@ sub _apply_default_to()
 }
 
 
-#   CONSTRUCTOR RELATED
-sub init()
-#   Rekindle all that we are
-{
-    my $self = shift; 
-    my @args;
-
-    #   A quick fix to allow Data::All->new() to handle a hashref
-    @args = (ref($_[0]) eq 'HASH') ? %{ $_[0] } : @_;
+BEGIN {
+    Data::All::IO->register_factory_type( plain => 'Data::All::IO::Plain');
+    Data::All::IO->register_factory_type(   xml => 'Data::All::IO::XML');
+    Data::All::IO->register_factory_type(    db => 'Data::All::IO::Database');
+    Data::All::IO->register_factory_type(   ftp => 'Data::All::IO::FTP');
     
-    my $args = $self->parse_arguments(@args);
-    
-    $self->_parse_args($args); 
-    populate $self => $args;
-    
-    #   BUG: This is being called more than once. It appears there is only
-    #   one instance of the factory across multiple Data::All instantiations.
-    foreach my $type (keys %{ $self->__factory_IO })
-    {
-        Data::All::IO->register_factory_type($type, $self->__factory_IO->{$type});
-    }
-    
-    #   TODO: Allow me to not have to instantiate without creating a moniker
-    #   TODO: Allow me to pass moniker as the first argument
-
-    #   Store the Data::All::IO module in the __DATA internal hashref
-    #   using the moniker as a key. Note: like values will be overridden!
-    #   The default moniker is the filename.
-    $self->__DATA({$args->{'moniker'} => $self->_load_IO($args)});
-
-    return $self;
+    #Data::All::Format->register_factory_type( delim => 'Data::All::Format::Delim');
+    #Data::All::Format->register_factory_type( fixed => 'Data::All::Format::Fixed');
+    #Data::All::Format->register_factory_type(  hash => 'Data::All::Format::Hash');
 }
 
 
 
-#   INTERNAL ATTRIBUTES
-sub internal;
-
-#   Contains Data::All::IO::* object by moniker
-internal 'DATA'        => {};  
-
-internal 'profile'     =>      
-#   Hardcoded/commonly used format configs
-{
-    csv     => ['delim', "\n", ',', '"', '\\'],
-    tab     => ['delim', "\n", "\t", '', '']
-};
-
-internal 'a2h_template'  =>    
-#   Templates for converting arrayref configurations to 
-#   internally used, easy to handle hashref configs. See _parse_args().
-#   TODO: move this functionality into a generic arg parsing library
-{
-    'format.delim'      => ['type','break','delim','quote','escape'],
-    'format.fixed'      => ['type','break','lengths'],
-    'ioconf.plain'      => ['type','perm','with_original'],
-    'ioconf.ftp'        => ['type','perm','with_original'],
-    'ioconf.db'         => ['type','perm','with_original']
-};
-
-internal 'default'     =>
-#   Default values for configuration variables
-{
-    profile => 'csv',
-    filters => '',
-    ioconf  => 
-    { 
-        type    => 'plain', 
-        perm    => 'r', 
-        with_original => 0 
-    },
-    format =>
-    {
-        type    => 'delim'
-    }
-};
-
-
-
-
-
 #   $Log: All.pm,v $
-#   Revision 1.1.1.1.8.21  2004/05/10 16:29:49  dgrant
-#   - Moved to version 0.026
+#   Revision 1.1.1.1.8.26  2004/05/17 22:34:09  dgrant
+#   - Overhauled the interface to Data::All.
+#   	- the standard fields are now from =>, to =>, ... which can be
+#   overridden on an case by case basis (i.e. send to => ..., to new() and you
+#   can send another to convert() to be used instead).
+#   	- Removed the whole moniker thing. It was stupid and I never used
+#   and I don't think anyone in their right mind ever would use it :-p
+#   	- convert() no longer accepts arrayrefs of data to convert (instead
+#   of using the "from" config). This functionality will appear as the method
+#   store() shortly.
+#   - Now at version 0.31
 #
-#   Revision 1.1.1.1.8.19  2004/05/10 04:10:04  dgrant
-#   *** empty log message ***
-#
-#   Revision 1.1.1.1.8.18  2004/05/06 19:28:39  dgrant
-#   *** empty log message ***
 #
 #   Revision 1.1.1.1.8.10  2004/04/29 22:03:21  dgrant
 #   - Added count() functionality exposed through Data:All so we can get the
@@ -445,9 +407,6 @@ internal 'default'     =>
 #   Revision 1.1.1.1.8.4  2004/04/24 01:22:35  dgrant
 #   - Added CPAN documentation to Data::All and updated the examples to be
 #   distribution friendly
-#
-#   Revision 1.1.1.1.8.3  2004/04/16 20:45:03  dgrant
-#   *** empty log message ***
 #
 #   Revision 1.1.1.1.8.2  2004/04/16 19:01:16  dgrant
 #   - Fixed Data::All::fields() bug (overlapped the attribute fields). Renamed 
@@ -488,18 +447,17 @@ Data::All - Access to data in many formats from many places
     use Data::All;
     
     #   Create an instance of Data::All for database data
-    my $input = Data::All->new(path => '/some/file.csv', profile => 'csv');
-    
-    #   Open the connection. Nothing happens until you tell it to. 
-    $input->open();
+    my $input = Data::All->new(
+        from => { path => '/some/file.csv', profile => 'csv' },
+        to   => { path => '/tmp/file.tab',  profile => 'tab'}
+    );
     
     #   $rec now contains an arrayref of hashrefs for the data defined in %db.
     #   collection() is a shortcut (see Synopsis 2)
     my $rec  = $input1->read();
 
-    #   Convert $input to another format.
-    #   NOTE: The hash reference here is different than the hash used by new()
-    $input->convert(to => {path => '/tmp/file.tab', profile => 'tab'}); 
+    #   Convert "from" to "to"
+    $input->convert(); 
 
     #   $rec is the same above   
     #   NOTE: The hash reference here is different than the hash used by new()
@@ -559,39 +517,44 @@ Data::All - Access to data in many formats from many places
         fields      => ['pass','user','host']
     );
     
-    #   Create an instance of Data::All for database data
-    my $input1 = Data::All->new(%db1);
+    #   Create an instance of Data::All for database data.
+    #   Note: parameters can also be a hash or hashref
+    my $input1 = Data::All->new({
+        from => %db1, 
+        to => \%db2,
+        print_fields => 0,              #   Do not output field name record
+        atomic => 1                     #   Load the input completely before outputting
+    });
     
-    $input1->open();    #   Open the connection.
+    $input1->convert();                 #   Save the mysql data to the postgresql table 
+    $input1->convert(to => \%file1);    #   And also save it to a CSV format
+    $input1->convert(to => \%file2);    #   And also save it to a fixed format
     
-    #   $rec now contains an arrayref of hashrefs for the data defined in %db.
-    my $rec  = $input1->read();
-    
-    $input1->convert(to => \%db2, $options);    #   Save the mysql data to a postgresql table
-    $input1->convert(to => \%file1);            #   And also save it to a file
-    
-    my $input2 = Data::All->new(%file1);    #   Open the file we just created
-    $input2->convert(to =>\%file2);         #   And convert it to a fixed width format
+    #   Read the fixed file we just created into an arrayref of hashes
+    my $records = collection(from => \%file2);    
     
 =head1 DESCRIPTION
-
-Similar to AnyData, but more suited towards converting data types 
-from and to various sources rather than reading data and playing with it. It is
-like an extension to IO::All which gives you access to data sources; Data::All
-gives you access to data. 
 
 Data::All is based on a few abstracted concepts. The line is a record and a 
 group of records is a collection. This allows a common record storing concept
 to be used across any number of data sources (delimited file, XML over a socket,
 a database table, etc...). 
 
-Supported formats: delimited and fixed.
+Supported formats: delimited and fixed (for filesystem types)
 Supported sources: local filesystem, database, socket (not heavily tested).
 
-Note that currently conversion happens an entire collection at a time which 
-would be an issue if you are dealing with large datasets. 
+Similar to AnyData, but more suited towards converting data types 
+from and to various sources rather than reading data and playing with it. It is
+like an extension to IO::All which gives you access to data sources; Data::All
+gives you access to data. 
 
-Data::All is a Spiffy module. 
+Conversion now happens record by record by default. You can set this explicitly
+by sending atomic => 1 or 0 [default] through to new() or convert(). 
+
+Data::All is a Spiffy module so you should be able to subclass Data::All or any
+of the Data::All::* classes to suite your own needs. It was written with Spiffy 
+0.15 but should work with later versions (depending on Spiffy's version to 
+version compatibility!).
 
 =head1 TODO LIST
 
@@ -600,34 +563,33 @@ stability. Upcoming development are breadth of features (more formats, more
 sources, ease of use, reliable subclassing, documentation/tests, and speed).
 
 Misc:
-   TODO: Create Data::All::Transport for taking care of converting formats
-   TODO: Add ability to create temporary files
-   TODO: Allow handling record fields with arrayrefs for anon / non-hash access
-   TODO: Default values for fields (avoid undef db errors)
-   TODO: Allow conversion to happen line by line.
-   TODO: Allow modifying data in memory and saving it back to a file
-   TODO: Consider using a standard internal structure, so every source is
-         converted into this structure (hash, Stone?)
-   TODO: Add SQL as a readable input and output
-   TODO: Expose format functions to Data::All users so simple single record
-         conversion can be thoroughly utilized.
+TODO:Allow a buffer to give some flexibility between record by record and atomic processing.
+TODO:Add ability to create temporary files
+TODO:Allow handling record fields with arrayrefs for anon / non-hash access
+TODO:Default values for fields (avoid undef db errors)
+TODO:Allow modifying data in memory and saving it back to a file
+TODO:Consider using a standard internal structure, so every source is converted into this structure (hash, Stone?)
+TODO:Add SQL as a readable input and output
+TODO:Expose format functions to Data::All users so simple single record conversion can be thoroughly utilized.
 
 =head1 STABILITY
 
 This module is currently undergoing rapid development and there is much left to 
 do. It is still in the alpha stage, so it is definitely not recommended for
-production use. 
-
-It has only been tested on Solaris 8 (SPARC64).
+production use. In particular the interface(s) have changed and may change 
+again. I have personally been tested it on Solaris 8 (SPARC64) and FreeBSD 4.9 
+(i386). Because of the way Data::All::IO::Plain and Data::All::IO::FTP treat
+filepaths, Data::All will have problems on non-*nix platforms. I will eventually
+get around to making Data::All platform independant, but other features take
+priority. You're welcome to write a patch and send it to me though :]
 
 =head1 KNOWN BUGS
 
-The record separator does not currently work properly as it is hardcoded 
+- The record separator does not currently work properly as it is hardcoded 
 to be newline (for delimited and fixed formats). 
-
-A perm of rw hasn't been tested, but should work. 
-
-The examples probably require a little tweaking to work properly.
+- The examples/* aren't always 100% in sync with the latest changes to Data::All.
+- If the first column is empty, it may screw up Data::All::Format::Delim (it
+will return undef for that column and the remaining columns with shift left)
 
 =head1 SEE ALSO
 

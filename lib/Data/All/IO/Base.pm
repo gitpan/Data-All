@@ -99,6 +99,8 @@ sub putrecords()
     {
         $self->putrecord($records->[ $start++ ], $options);
     }
+
+    return 1;
 }
 
 

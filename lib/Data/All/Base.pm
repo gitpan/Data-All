@@ -5,6 +5,7 @@ package Data::All::Base;
 use strict;
 no warnings;            #   Perl will complain about attribute being redefined
 
+
 use Symbol;
 use Spiffy '-base';
 use Data::Dumper;

@@ -1,6 +1,4 @@
 Changes
-Data-All-0.026/Changes
-Data-All-0.026/t/Data-All.t
 lib/Data/All.pm
 lib/Data/All/Base.pm
 lib/Data/All/Format.pm

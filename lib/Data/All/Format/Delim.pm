@@ -54,25 +54,25 @@ sub parse(\$)
     return \@values;
 }
 
-sub parse3(\$)
-{
-    my ($self, $record) = @_;
-    my @values;
+#sub parse3(\$)
+#{
+#    my ($self, $record) = @_;
+#    my @values;
     
-    my ($d, $q, $e) = ($self->delim, $self->quote, $self->escape);
+#    my ($d, $q, $e) = ($self->delim, $self->quote, $self->escape);
     
-    use Regexp::Common qw /delimited/;
-    while ($$record =~ /$RE{delimited}{-delim=>quotemeta($d)}{-keep}/g)
-    {
-        push (@values, $1);
-    }
+#    use Regexp::Common qw /delimited/;
+#    while ($$record =~ /$RE{delimited}{-delim=>quotemeta($d)}{-keep}/g)
+#    {
+#        push (@values, $1);
+#    }
     
     
         
     
-    warn Dumper(\@values);
-    return \@values;
-}
+#    warn Dumper(\@values);
+#    return \@values;
+#}
 
 sub parse2(\$)
 #   A bad solution, CSV only!

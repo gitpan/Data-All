@@ -1,5 +1,13 @@
 Revision history for Perl extension Data::All.
 
+0.031  Mon May 17 15:46:29 2004
+	- Overhauled interface to Data::All
+		- The usage of from => ..., to => ... now standardized
+		- Removed the notion of monikers (useless!)
+	- Collections can now be converted record by record rather than 
+		atomically (setting atomic => 1 will do the opposite)
+	- Many bug fixes
+
 0.026  Mon May 10 10:21:54 2004
 	- Bug fixes (option parsing, creating new files)
 	- Added Data::All::IO::FTP (not fully implemented)

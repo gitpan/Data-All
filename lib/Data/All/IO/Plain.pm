@@ -1,6 +1,6 @@
 package Data::All::IO::Plain;
 
-#   $Id: Plain.pm,v 1.1.2.1.2.1.2.1.6.2.4.1.4.8 2004/05/10 16:29:50 dgrant Exp $
+#   $Id: Plain.pm,v 1.1.2.1.2.1.2.1.6.2.4.1.4.11 2004/05/17 22:28:51 dgrant Exp $
 
 #   BUG: A leading delimiter (i.e. a blank first column) will fuck it up
 
@@ -28,23 +28,27 @@ sub open($)
     my $self = shift;
     my $path = $self->create_path();
     
-    warn " -> Opening $path for ", $self->ioconf()->{'perm'};
+    unless ($self->is_open())
+    {
+        warn " -> Opening $path for ", $self->ioconf()->{'perm'};
+        
+        die("The file: $path does not exist")
+            if (($self->ioconf()->{'perm'} eq 'r') && !(-f $path));
     
-    die("The file: $path does not exist")
-        if (($self->ioconf()->{'perm'} eq 'r') && !(-f $path));
-
-    #   We create out own filehandle for better read/write control
-    my $fh = FileHandle->new($self->create_path(), $self->ioconf()->{'perm'});        
-    my $IO = io(-file_handle => $fh, '-tie');
+        #   We create out own filehandle for better read/write control
+        my $fh = FileHandle->new($self->create_path(), $self->ioconf()->{'perm'});        
+        my $IO = io(-file_handle => $fh, '-tie');
+        
+        $IO->autoclose(1);
+        
+        $self->__IO( $IO );
+        $self->__fh( $fh );
+        
+        $self->is_open(1);
     
-    $IO->autoclose(1);
+        $self->_extract_fields();             #   Initialize field names
+    }
     
-    $self->__IO( $IO );
-    $self->__fh( $fh );
-    
-    $self->is_open(1);
-
-    $self->_extract_fields();             #   Initialize field names 
     return $self->is_open();
 }
 
@@ -114,8 +118,8 @@ sub putrecord($)
 {
     my $self = shift;
     my $record = shift;
-
     $self->__IO()->print($self->hash_to_record($record));
+    return 1;
 }
 
 
@@ -131,14 +135,24 @@ sub count()
     my $self = shift;
     my $count;
     
+    #   From the Perl Cookbook. It doesn't actually replace every
+    #   new line with a new new line -- it's a legacy feature. 
     $count += tr/\n/\n/ while sysread($self->__fh(), $_, 2 ** 20);
     
     return $count;
-    #return system('wc', '-l', $_[0]->create_path()); 
 }
 sub _next()      { $_[0]->__curpos( $_[0]->__curpos() + 1) }
 
 #   $Log: Plain.pm,v $
+#   Revision 1.1.2.1.2.1.2.1.6.2.4.1.4.11  2004/05/17 22:28:51  dgrant
+#   - Misc tidying
+#
+#   Revision 1.1.2.1.2.1.2.1.6.2.4.1.4.10  2004/05/13 00:23:11  dgrant
+#   - Some minor comments added
+#
+#   Revision 1.1.2.1.2.1.2.1.6.2.4.1.4.9  2004/05/11 01:49:33  dgrant
+#   *** empty log message ***
+#
 #   Revision 1.1.2.1.2.1.2.1.6.2.4.1.4.8  2004/05/10 16:29:50  dgrant
 #   - Moved to version 0.026
 #

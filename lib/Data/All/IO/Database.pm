@@ -1,6 +1,6 @@
 package Data::All::IO::Database;
 
-#   $Id: Database.pm,v 1.1.2.2.2.2.2.1.6.1.8.13 2004/05/10 16:29:50 dgrant Exp $
+#   $Id: Database.pm,v 1.1.2.2.2.2.2.1.6.1.8.19 2004/05/15 04:08:27 dgrant Exp $
 
 
 use strict;
@@ -11,7 +11,7 @@ use DBI;
 
 use vars qw($VERSION);
 
-$VERSION = 0.15;
+$VERSION = 0.16;
 
 internal 'DBH';
 internal 'STH';
@@ -25,7 +25,7 @@ sub open($)
 
     $self->_create_dbh();               #   Open DB connection
 
-    if ($query =~ /^SELECT/i)
+    if ($self->ioconf()->{'perm'} =~ /^r/)
     {
         $self->__STH($self->__DBH()->prepare($query));
         $self->__STH()->execute();
@@ -48,8 +48,14 @@ sub close()
     return;
 }
 
-sub nextrecord() {  $_[0]->__STH()->fetchrow_hashref() }
+sub nextrecord() { $_[0]->__STH()->fetchrow_hashref() }
 
+sub getrecord_hash()
+{
+    my $self = shift; 
+        
+    return $self->__STH()->fetchrow_hashref();
+}
 
 sub getrecord_array() 
 { 
@@ -89,11 +95,7 @@ sub putrecord($;\%)
 {
     my $self = shift;
     my ($record, $options) = @_;
-    
-    
 
-    
-    print 'HOPE', Dumper($options);
     
     my @vars = $self->_generate_query_vars(
                             $options, $self->hash_to_array($record));
@@ -104,6 +106,7 @@ sub putrecord($;\%)
         unless $self->__STH();
 
     $self->__STH()->execute(@vars);
+    return 1;
 }
 
 
@@ -128,6 +131,7 @@ sub putrecords()
     #   Close the statement handle
     $self->__STH()->finish();
     
+    return 1;
 }
 
 sub count()
@@ -137,18 +141,15 @@ sub count()
 {
     my $self = shift;
     my $query = $self->path()->[3];
-    my $count;
+    my ($sth, $ref, $count);
     
-    return $count unless($query =~ /^\s*?SELECT/);
+    return $count unless($self->ioconf()->{'perm'} =~ /^r/);
     
-    $query =~ s/SELECT\s.+?\sFROM/SELECT COUNT(*) FROM/;
+    $query =~ s/SELECT\s.+?\sFROM/SELECT COUNT(*) as cnt FROM/im;
     
-    $self->__STH($self->__DBH()->prepare($query))
-        unless ($self->__STH());
+    return undef unless ($sth = $self->__DBH()->prepare($query));
     
-    $self->__STH()->execute();
-    
-    $count = ($self->__STH()->fetchrow_array())[0];
+    $count = $self->__STH()->execute() or return undef;
     
     $self->__STH()->finish();
     
@@ -200,7 +201,7 @@ sub _generate_query_vars($$)
 sub _create_dbh()
 {
     my $self = shift;
-    my $dbh = $self->_db_connect();
+    my $dbh = $self->__DBH() || $self->_db_connect();
     
     ($dbh)
         ? $self->__DBH($dbh)
@@ -241,20 +242,27 @@ sub _extract_fields()
 
 
 #   $Log: Database.pm,v $
+#   Revision 1.1.2.2.2.2.2.1.6.1.8.19  2004/05/15 04:08:27  dgrant
+#   *** empty log message ***
+#
+#   Revision 1.1.2.2.2.2.2.1.6.1.8.18  2004/05/13 00:23:56  dgrant
+#   - Bug fix: count() was not returning results properly and now displays the
+#   correct record count for read queries only
+#
+#   Revision 1.1.2.2.2.2.2.1.6.1.8.17  2004/05/12 03:34:55  dgrant
+#   *** empty log message ***
+#
+#   Revision 1.1.2.2.2.2.2.1.6.1.8.16  2004/05/11 21:55:42  dgrant
+#   - Bug fix: open() executed the query if it looked like a SELECT
+#       instead of where ioconf said read or write. In postgresql, 
+#       SELECTs can be used with functions for inserting which is a
+#       write. 
+#   
 #   Revision 1.1.2.2.2.2.2.1.6.1.8.13  2004/05/10 16:29:50  dgrant
 #   - Moved to version 0.026
 #
-#   Revision 1.1.2.2.2.2.2.1.6.1.8.11  2004/05/10 04:10:06  dgrant
-#   *** empty log message ***
-#
-#   Revision 1.1.2.2.2.2.2.1.6.1.8.10  2004/05/06 15:47:45  dgrant
-#   *** empty log message ***
-#
 #   Revision 1.1.2.2.2.2.2.1.6.1.8.8  2004/05/05 16:46:49  dgrant
 #   - Misc changes I should have commited on Friday when I made them.
-#
-#   Revision 1.1.2.2.2.2.2.1.6.1.8.6  2004/04/29 22:25:01  dgrant
-#   *** empty log message ***
 #
 #   Revision 1.1.2.2.2.2.2.1.6.1.8.3  2004/04/28 23:51:43  dgrant
 #   - Added transaction support
@@ -272,10 +280,7 @@ sub _extract_fields()
 #
 #   Revision 1.1.2.2.2.1  2004/03/31 22:36:26  dgrant
 #   ongoing...
-#
-#   Revision 1.1.2.2  2004/03/30 22:43:29  dgrant
-#   *** empty log message ***
-#
+
 #   Revision 1.1.2.1  2004/03/26 21:36:53  dgrant
 #   - Added IO::Database
 #   - NOTE: Not currently functioning
