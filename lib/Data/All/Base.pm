@@ -33,7 +33,7 @@ sub new
     my ($args) = $self->parse_arguments(@_);
     tie *$self, $self if $args->{-tie};
     $self->use_lock(1) if $args->{-lock};
-    
+
     return ($self->can('init'))
         ? $self->init(@_)
         : $self;
@@ -49,7 +49,7 @@ sub populate
 
     for my $a (keys %{ $args })
     {
-        warn(0, "No attribute method for $a"), next 
+        warn("No attribute method for $a"), next 
             unless $self->can($a);
         #warn 9, "Running $a"; 
         $self->$a($args->{$a});

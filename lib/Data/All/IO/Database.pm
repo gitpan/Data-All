@@ -1,6 +1,6 @@
 package Data::All::IO::Database;
 
-#   $Id: Database.pm,v 1.1.2.2.2.2.2.1.6.1.8.19 2004/05/15 04:08:27 dgrant Exp $
+#   $Id: Database.pm,v 1.1.2.2.2.2.2.1.6.1.8.24 2004/05/26 07:28:02 dgrant Exp $
 
 
 use strict;
@@ -9,12 +9,10 @@ use warnings;
 use Data::All::IO::Base '-base';
 use DBI;
 
-use vars qw($VERSION);
+our $VERSION = 0.16;
 
-$VERSION = 0.16;
-
-internal 'DBH';
-internal 'STH';
+attribute '__DBH';
+attribute '__STH';
 
 
 
@@ -22,17 +20,29 @@ sub open($)
 {
     my $self = shift;
     my $query = $self->path()->[3];
-
-    $self->_create_dbh();               #   Open DB connection
-
-    if ($self->ioconf()->{'perm'} =~ /^r/)
+    
+    unless ($self->is_open())
     {
-        $self->__STH($self->__DBH()->prepare($query));
-        $self->__STH()->execute();
-        $self->_extract_fields();
+        warn " -> Opening database connection for ", $self->ioconf()->{'perm'};
+        warn " -> path:", join ', ', @{ $self->path() };
+        warn " -> format:", $self->format()->{'type'};
+        warn " -> io:", $self->ioconf->{'type'};
+        
+        $self->_create_dbh();               #   Open DB connection
+        if ($self->ioconf()->{'perm'} =~ /r/)
+        {
+            warn " -> Executing query";
+            
+            my $sth = $self->__DBH()->prepare($query);
+            $sth->execute() or warn "Can't execute statement: $DBI::errstr";
+            $self->__STH($sth);
+            $self->_extract_fields();
+        }
+        
+        $self->is_open(1);
     }
     
-    return $self->is_open(1);
+    return $self->is_open();
 }
 
 sub close()
@@ -53,8 +63,9 @@ sub nextrecord() { $_[0]->__STH()->fetchrow_hashref() }
 sub getrecord_hash()
 {
     my $self = shift; 
-        
-    return $self->__STH()->fetchrow_hashref();
+    my $sth = $self->__STH();
+
+    return $sth->fetchrow_hashref();
 }
 
 sub getrecord_array() 
@@ -100,12 +111,13 @@ sub putrecord($;\%)
     my @vars = $self->_generate_query_vars(
                             $options, $self->hash_to_array($record));
    
-    #warn $self->path()->[3];
+    #print join(':', @vars), "\n";
     
     $self->__STH($self->__DBH()->prepare($self->path()->[3]))
         unless $self->__STH();
 
     $self->__STH()->execute(@vars);
+    
     return 1;
 }
 
@@ -131,7 +143,6 @@ sub putrecords()
     #   Close the statement handle
     $self->__STH()->finish();
     
-    return 1;
 }
 
 sub count()
@@ -194,7 +205,7 @@ sub _generate_query_vars($$)
         #   Add the prefix values to the beginning of the array
         push(@vars, @post_vars); 
     }
-        
+         
     return wantarray ? @vars : \@vars; 
 }
 
@@ -206,6 +217,8 @@ sub _create_dbh()
     ($dbh)
         ? $self->__DBH($dbh)
         : die("Cannot create DB Connection");
+        
+    #$self->__DBH()->trace(2);
 }
 
 sub _create_sth()
@@ -222,7 +235,7 @@ sub _db_connect()
 {
     my $self = shift;
     return if ($self->is_open());
-    return DBI->connect($self->_create_connect(), { RaiseError => 1, AutoCommit => 0 });
+    return DBI->connect($self->_create_connect(), { PrintWarn=>1,PrintError=>1, RaiseError => 1, AutoCommit => 0 });
 }
 
 sub _create_connect()
@@ -242,6 +255,18 @@ sub _extract_fields()
 
 
 #   $Log: Database.pm,v $
+#   Revision 1.1.2.2.2.2.2.1.6.1.8.24  2004/05/26 07:28:02  dgrant
+#   *** empty log message ***
+#
+#   Revision 1.1.2.2.2.2.2.1.6.1.8.22  2004/05/20 17:43:41  dgrant
+#   *** empty log message ***
+#
+#   Revision 1.1.2.2.2.2.2.1.6.1.8.21  2004/05/19 16:58:03  dgrant
+#   *** empty log message ***
+#
+#   Revision 1.1.2.2.2.2.2.1.6.1.8.20  2004/05/17 23:27:17  dgrant
+#   - Misc cleanup, no changes
+#
 #   Revision 1.1.2.2.2.2.2.1.6.1.8.19  2004/05/15 04:08:27  dgrant
 #   *** empty log message ***
 #

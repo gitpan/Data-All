@@ -2,18 +2,20 @@ package Data::All;
 
 #   Data::All - Access to data in many formats from many places
 
-#   $Id: All.pm,v 1.1.1.1.8.26 2004/05/17 22:34:09 dgrant Exp $
+#   $Id: All.pm,v 1.1.1.1.8.30 2004/05/26 07:28:02 dgrant Exp $
 
 #   TODO: Create Data::All::IO::Hash for internal storage
-    
+#   TODO: Add checking for output field names that aren't present in input field names
+#   TODO: Auto reset file/db cursors? Call read() then convert() causes error;
+
 use strict;
 use warnings;
 #use diagnostics;
-
+ 
 use Data::All::Base '-base';    #   Spiffy
 use Data::All::IO;
 
-our $VERSION = 0.031;
+our $VERSION = 0.032;
 our @EXPORT = qw(collection);
 
 
@@ -24,6 +26,7 @@ sub getrecord;
 sub putrecord;
 sub is_open;
 sub convert;        #   Change formats
+sub store;          #   save in memory records
 sub count;          #   Record count
 sub close;
 sub read;
@@ -86,9 +89,17 @@ sub init()
 #   Rekindle all that we are
 {
     my $self = shift;
-    my $args;
     
-    return $self unless ($_[0]);
+    my $args = $self->reinit(@_);
+    return $self;
+}
+
+sub reinit
+{
+    my $self = shift;
+    my $args;
+
+    return undef unless ($_[0]);
     
     #   Allow for hash or hashref args
     $args = (ref($_[0]) eq 'HASH') ? $_[0] : { @_ };
@@ -97,8 +108,9 @@ sub init()
     
     $self->prep_collections();
     
-    return $self;
+    return $args;
 }
+
 
 sub prep_collections()
 #   Prepare and store an instance of Data::All::IO::* for from and to configs 
@@ -117,12 +129,27 @@ sub count(;$)
 #   get a record count
 {
     my $self = shift;
-    my $moniker = shift || $self->moniker;
+    my $which = shift || 'from';
     
-    $self->open() unless ($self->is_open($moniker));
-    return $self->__DATA()->{$moniker}->count();
+    $self->open() unless ($self->is_open($which));
+    return $self->__collection()->{$which}->count();
 }
 
+
+sub count_to(;$)
+#   get a record count for the from config
+{
+    my $self = shift;
+    return $self->count('to');
+}
+
+
+sub count_from(;$)
+#   get a record count for the from config
+{
+    my $self = shift;
+    return $self->count('from');
+}
 
 sub getrecord(;$$)
 #   Get a single, consecutive record
@@ -172,25 +199,33 @@ sub collection(%)
 sub open(;$)
 {
     my $self = shift;
-    my $which = shift || 'from';
+    #my $which = shift || 'from';
     
-    $self->__collection()->{$which}->open();
-    
-    unless ($self->is_open())
+    foreach my $source (keys %{ $self->__collection() })
     {
-        $self->__ERROR($self->__collection()->{$which}->__ERROR());
-        warn "Cannot open ", $self->__collection()->{$which}->create_path();
-        die;
+        $self->__collection()->{$source}->open();
+        
+        unless ($self->__collection()->{$source}->is_open())
+        {
+            $self->__ERROR($self->__collection()->{$source}->__ERROR());
+            die "Cannot open ", $self->__collection()->{$source}->create_path();
+        }
     }
     
-    return $self->is_open();
+    return;
 }
 
 sub close(;$)
 {
     my $self = shift;
-    my $which = shift || 'from';
-    $self->__collection()->{$which}->close();
+    #my $which = shift || 'from';
+    
+    foreach my $source (keys %{ $self->__collection() })
+    {
+        $self->__collection()->{$source}->close();
+    }
+    
+    return;
 }
 
 sub show_fields(;$)
@@ -211,6 +246,37 @@ sub read(;$$)
     return !wantarray ? $records :   @{ $records };
 }
 
+sub store
+#   Store data from an array ref (of hashes) into a Data::All enabled source
+#    IN: (arrayref) of hashes -- your records
+#         [ standard parameters ]
+#   OUT: 
+{
+    my $self = shift;
+    my $from = shift;
+    my ($to, $bool);
+    
+    my $args = $self->reinit(@_);
+    
+    $to = $self->__collection()->{'to'};
+    
+    $to->open();
+    
+    $to->fields([keys %{ $from->[0] }])
+        unless ($to->fields() && $#{ $to->fields() });
+        
+    $to->putfields()   if ($self->print_fields);
+
+    #   Convert data in a wholesome fashion (rather than piecemeal)
+    #   There is no point in doing it record by record b/c the 
+    #   records we are storing are already in memory.
+    $bool = $to->putrecords($from, $args) ;
+    
+    $to->close();
+    
+    return 1;
+}
+
 sub convert
 #   Move data from one Data::All collection to another, using a simple 
 #   from (source) and to (target) metaphor
@@ -219,8 +285,8 @@ sub convert
     my $self = shift;
     my ($from, $to, $bool);
     
-    $self->init(@_);
-    
+    my $args = $self->reinit(@_);
+
     ($from, $to) = @{ $self->__collection() }{'from','to'};
 
     $from->open();
@@ -237,13 +303,13 @@ sub convert
     $to->putfields()   if ($self->print_fields);
     
     if ($self->atomic) {
-    #   Convert data in a wholesome fashion (rather than piecemeal)
-        $bool = $to->putrecords([$from->getrecords()]) ;
+        #   Convert data in a wholesome fashion (rather than piecemeal)
+        $bool = $to->putrecords([$from->getrecords()], $args) ;
     }
     else {
     #   Convert record by record (great for large family members!!!!!!!)
         while (my $rec = $from->getrecord_hash()) 
-        { $bool = $to->putrecord($rec) }
+        { $bool = $to->putrecord($rec, $args) }
     }
     
     $to->close();
@@ -385,6 +451,19 @@ BEGIN {
 
 
 #   $Log: All.pm,v $
+#   Revision 1.1.1.1.8.30  2004/05/26 07:28:02  dgrant
+#   *** empty log message ***
+#
+#   Revision 1.1.1.1.8.29  2004/05/20 17:45:08  dgrant
+#   - Added Data::All::store()
+#   - Some bug fixes
+#
+#   Revision 1.1.1.1.8.28  2004/05/20 17:43:40  dgrant
+#   *** empty log message ***
+#
+#   Revision 1.1.1.1.8.27  2004/05/18 00:43:03  dgrant
+#   - Misc bug fixes
+#
 #   Revision 1.1.1.1.8.26  2004/05/17 22:34:09  dgrant
 #   - Overhauled the interface to Data::All.
 #   	- the standard fields are now from =>, to =>, ... which can be

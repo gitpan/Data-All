@@ -2,7 +2,7 @@ package Data::All::IO::Base;
 
 #   Base package for all format modules
 
-#   $Id: Base.pm,v 1.1.1.1.8.7 2004/05/10 04:10:05 dgrant Exp $
+#   $Id: Base.pm,v 1.1.1.1.8.8 2004/05/20 17:43:40 dgrant Exp $
 
 use strict;
 use warnings;
@@ -93,14 +93,12 @@ sub putrecords()
     die("$self->putrecords() needs records") unless ($#{ $records }+1);
         
     warn "Writing $count records from $start";
-
+    
     my $record;
     while ($count--)
     {
         $self->putrecord($records->[ $start++ ], $options);
     }
-
-    return 1;
 }
 
 
@@ -121,10 +119,6 @@ sub init()
     
     populate $self => $args;
     
-    warn " -> path:", join ', ', @{ $self->path() };
-    warn " -> format:", $self->format()->{'type'};
-    warn " -> io:", $self->ioconf->{'type'};
-    
     $self->__FORMAT($self->_load_format())  
         #   Override the loading of a Format reader for Hash types
         unless ($self->ioconf()->{'type'} eq 'db');
@@ -138,6 +132,9 @@ internal 'added_fields'         => {};
 
 
 #   $Log: Base.pm,v $
+#   Revision 1.1.1.1.8.8  2004/05/20 17:43:40  dgrant
+#   *** empty log message ***
+#
 #   Revision 1.1.1.1.8.7  2004/05/10 04:10:05  dgrant
 #   *** empty log message ***
 #

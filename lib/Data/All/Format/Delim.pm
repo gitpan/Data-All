@@ -1,7 +1,7 @@
 package Data::All::Format::Delim;
 
 
-#   $Id: Delim.pm,v 1.1.1.1.8.3 2004/04/24 01:22:35 dgrant Exp $
+#   $Id: Delim.pm,v 1.1.1.1.8.4 2004/05/17 23:27:17 dgrant Exp $
 
 #   TODO: fully implement add_quotes attribute
 
@@ -54,25 +54,25 @@ sub parse(\$)
     return \@values;
 }
 
-#sub parse3(\$)
-#{
-#    my ($self, $record) = @_;
-#    my @values;
+sub parse3(\$)
+{
+    my ($self, $record) = @_;
+    my @values;
     
 #    my ($d, $q, $e) = ($self->delim, $self->quote, $self->escape);
     
-#    use Regexp::Common qw /delimited/;
-#    while ($$record =~ /$RE{delimited}{-delim=>quotemeta($d)}{-keep}/g)
-#    {
-#        push (@values, $1);
-#    }
+    #use Regexp::Common qw /delimited/;
+    #while ($$record =~ /$RE{delimited}{-delim=>quotemeta($d)}{-keep}/g)
+    #{
+    #    push (@values, $1);
+    #}
     
     
         
     
-#    warn Dumper(\@values);
-#    return \@values;
-#}
+    #warn Dumper(\@values);
+    #return \@values;
+}
 
 sub parse2(\$)
 #   A bad solution, CSV only!
@@ -133,6 +133,9 @@ sub contract(\@)
 
 
 #   $Log: Delim.pm,v $
+#   Revision 1.1.1.1.8.4  2004/05/17 23:27:17  dgrant
+#   - Misc cleanup, no changes
+#
 #   Revision 1.1.1.1.8.3  2004/04/24 01:22:35  dgrant
 #   - Added CPAN documentation to Data::All and updated the examples to be
 #   distribution friendly
