@@ -2,7 +2,7 @@ package Data::All;
 
 #   Data::All - Access to data in many formats from many places
 
-#   $Id: All.pm,v 1.1.1.1.8.18 2004/05/06 19:28:39 dgrant Exp $
+#   $Id: All.pm,v 1.1.1.1.8.21 2004/05/10 16:29:49 dgrant Exp $
 
 use strict;
 use warnings;
@@ -11,7 +11,7 @@ use warnings;
 use Data::All::Base '-base';    #   Spiffy
 use Data::All::IO;
 
-our $VERSION = 0.025;
+our $VERSION = 0.026;
 our @EXPORT = qw(collection);
 
 
@@ -106,6 +106,7 @@ sub is_open(;$)
 sub collection(%)
 {
     my ($conf1, $conf2) = @_;
+
     my $itself = new('Data::All', %{ $conf1 });
     
     $itself->open();
@@ -149,9 +150,8 @@ sub read(;$$)
 {
     my $self = shift; 
     my $moniker = shift || $self->moniker;
-    my ($start, $count) = (shift || 0, shift || undef); 
 
-    my $records = $self->__DATA()->{$moniker}->getrecords($start, $count);
+    my $records = $self->__DATA()->{$moniker}->getrecords();
     
     return !wantarray ? $records :   @{ $records };
 }
@@ -199,11 +199,13 @@ sub convert
     
     #   Use the from's field names if the to's has none
     $to->fields($from->fields)    unless ($to->fields() && $#{ $to->fields() });
-    print Dumper($args);
+ 
     #   Print the field names into the to
     #   TODO: If the field list is in the from collection, then the
     #   fields will appear twice in the to file. 
     $to->putfields()   if ($args->{'print_fields'});
+    
+    
     
     if ($args->{'atomic'} == 1)
     #   Convert data in a wholesome fashion (rather than piecemeal)
@@ -349,7 +351,7 @@ sub init()
 {
     my $self = shift; 
     my @args;
-    
+
     #   A quick fix to allow Data::All->new() to handle a hashref
     @args = (ref($_[0]) eq 'HASH') ? %{ $_[0] } : @_;
     
@@ -358,6 +360,8 @@ sub init()
     $self->_parse_args($args); 
     populate $self => $args;
     
+    #   BUG: This is being called more than once. It appears there is only
+    #   one instance of the factory across multiple Data::All instantiations.
     foreach my $type (keys %{ $self->__factory_IO })
     {
         Data::All::IO->register_factory_type($type, $self->__factory_IO->{$type});
@@ -392,11 +396,12 @@ internal 'profile'     =>
 internal 'a2h_template'  =>    
 #   Templates for converting arrayref configurations to 
 #   internally used, easy to handle hashref configs. See _parse_args().
+#   TODO: move this functionality into a generic arg parsing library
 {
     'format.delim'      => ['type','break','delim','quote','escape'],
     'format.fixed'      => ['type','break','lengths'],
     'ioconf.plain'      => ['type','perm','with_original'],
-    'ioconf.ftp'         => ['type','perm','with_original'],
+    'ioconf.ftp'        => ['type','perm','with_original'],
     'ioconf.db'         => ['type','perm','with_original']
 };
 
@@ -422,6 +427,12 @@ internal 'default'     =>
 
 
 #   $Log: All.pm,v $
+#   Revision 1.1.1.1.8.21  2004/05/10 16:29:49  dgrant
+#   - Moved to version 0.026
+#
+#   Revision 1.1.1.1.8.19  2004/05/10 04:10:04  dgrant
+#   *** empty log message ***
+#
 #   Revision 1.1.1.1.8.18  2004/05/06 19:28:39  dgrant
 #   *** empty log message ***
 #

@@ -1,10 +1,12 @@
 package Data::All::IO;
 
-#   $Id: IO.pm,v 1.1.1.1.8.2 2004/05/05 16:46:49 dgrant Exp $
+#   $Id: IO.pm,v 1.1.1.1.8.3 2004/05/10 04:10:05 dgrant Exp $
 
 use strict;
 
 use base qw( Class::Factory );
+
+our $VERSION = 0.10;
 
 #   NOTE: I need to be given factory type before I am useful
 #   i.e. Data::All::IO->register_factory_type( pkg => 'Data::All::IO::Pkg' );
@@ -21,6 +23,9 @@ sub new()
 
 
 #   $Log: IO.pm,v $
+#   Revision 1.1.1.1.8.3  2004/05/10 04:10:05  dgrant
+#   *** empty log message ***
+#
 #   Revision 1.1.1.1.8.2  2004/05/05 16:46:49  dgrant
 #   - Misc changes I should have commited on Friday when I made them.
 #

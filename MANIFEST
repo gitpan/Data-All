@@ -1,4 +1,6 @@
 Changes
+Data-All-0.026/Changes
+Data-All-0.026/t/Data-All.t
 lib/Data/All.pm
 lib/Data/All/Base.pm
 lib/Data/All/Format.pm
@@ -9,12 +11,11 @@ lib/Data/All/Format/XML.pm
 lib/Data/All/IO.pm
 lib/Data/All/IO/Base.pm
 lib/Data/All/IO/Database.pm
-lib/Data/All/IO/File.pm
+lib/Data/All/IO/FTP.pm
 lib/Data/All/IO/Plain.pm
-lib/Data/All/Transport.pm
 Makefile.PL
-MANIFEST
-META.yml			Module meta-data (added by MakeMaker)
+MANIFEST			This list of files
+META.yml
 README
 t/Data-All.t
 t/sample.csv

@@ -1,6 +1,6 @@
 package Data::All::IO::Plain;
 
-#   $Id: Plain.pm,v 1.1.2.1.2.1.2.1.6.2.4.1.4.6 2004/05/06 15:47:45 dgrant Exp $
+#   $Id: Plain.pm,v 1.1.2.1.2.1.2.1.6.2.4.1.4.8 2004/05/10 16:29:50 dgrant Exp $
 
 #   BUG: A leading delimiter (i.e. a blank first column) will fuck it up
 
@@ -12,7 +12,7 @@ use IO::All;
 use FileHandle;
 
 
-our $VERSION = 0.11;
+our $VERSION = 0.12;
 
 internal 'IO';
 internal 'fh';
@@ -26,13 +26,15 @@ sub create_path()
 sub open($)
 {
     my $self = shift;
-    warn " -> Opening ", $self->create_path(), ' for ', $self->ioconf()->{'perm'};
+    my $path = $self->create_path();
     
-    die("The file: ".$self->create_path()." does not exist")
-        unless (-f $self->create_path());
+    warn " -> Opening $path for ", $self->ioconf()->{'perm'};
     
+    die("The file: $path does not exist")
+        if (($self->ioconf()->{'perm'} eq 'r') && !(-f $path));
+
     #   We create out own filehandle for better read/write control
-    my $fh = new FileHandle($self->create_path(), $self->ioconf()->{'perm'});
+    my $fh = FileHandle->new($self->create_path(), $self->ioconf()->{'perm'});        
     my $IO = io(-file_handle => $fh, '-tie');
     
     $IO->autoclose(1);
@@ -137,6 +139,9 @@ sub count()
 sub _next()      { $_[0]->__curpos( $_[0]->__curpos() + 1) }
 
 #   $Log: Plain.pm,v $
+#   Revision 1.1.2.1.2.1.2.1.6.2.4.1.4.8  2004/05/10 16:29:50  dgrant
+#   - Moved to version 0.026
+#
 #   Revision 1.1.2.1.2.1.2.1.6.2.4.1.4.6  2004/05/06 15:47:45  dgrant
 #   *** empty log message ***
 #

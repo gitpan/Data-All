@@ -2,7 +2,7 @@ package Data::All::IO::Base;
 
 #   Base package for all format modules
 
-#   $Id: Base.pm,v 1.1.1.1.8.6 2004/05/06 15:47:45 dgrant Exp $
+#   $Id: Base.pm,v 1.1.1.1.8.7 2004/05/10 04:10:05 dgrant Exp $
 
 use strict;
 use warnings;
@@ -66,16 +66,13 @@ sub getrecord_hash()
 sub getrecords(;$$)
 {
     my $self = shift;
-    my $start = shift || $self->__curpos(-1);
     #   TODO:   Enable running COUNT records only
-    #my $count = shift || ($self->count() - $start);
-    my ($record, @records);
-    
-    $self->__curpos($start);
+
+    my (@records);
     
     warn ' -> using fields:', join(',', @{ $self->fields });
     
-    while ($record = $self->getrecord_hash())
+    while (my $record = $self->getrecord_hash())
     { 
         push(@records, $record);
     }
@@ -121,7 +118,7 @@ sub init()
     my ($self, $args) = @_;
     
     populate $self => $args;
-
+    
     warn " -> path:", join ', ', @{ $self->path() };
     warn " -> format:", $self->format()->{'type'};
     warn " -> io:", $self->ioconf->{'type'};
@@ -139,6 +136,9 @@ internal 'added_fields'         => {};
 
 
 #   $Log: Base.pm,v $
+#   Revision 1.1.1.1.8.7  2004/05/10 04:10:05  dgrant
+#   *** empty log message ***
+#
 #   Revision 1.1.1.1.8.6  2004/05/06 15:47:45  dgrant
 #   *** empty log message ***
 #

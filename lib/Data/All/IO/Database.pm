@@ -1,6 +1,6 @@
 package Data::All::IO::Database;
 
-#   $Id: Database.pm,v 1.1.2.2.2.2.2.1.6.1.8.10 2004/05/06 15:47:45 dgrant Exp $
+#   $Id: Database.pm,v 1.1.2.2.2.2.2.1.6.1.8.13 2004/05/10 16:29:50 dgrant Exp $
 
 
 use strict;
@@ -11,7 +11,7 @@ use DBI;
 
 use vars qw($VERSION);
 
-$VERSION = 0.14;
+$VERSION = 0.15;
 
 internal 'DBH';
 internal 'STH';
@@ -24,7 +24,7 @@ sub open($)
     my $query = $self->path()->[3];
 
     $self->_create_dbh();               #   Open DB connection
-    
+
     if ($query =~ /^SELECT/i)
     {
         $self->__STH($self->__DBH()->prepare($query));
@@ -56,7 +56,7 @@ sub getrecord_array()
     my $self = shift; 
     my $record = $self->__STH()->fetchrow_arrayref();
 
-    return wantarray ? @{$record} : $record;
+    return !wantarray ? $record : @{ $record };
 }
 
 sub getrecords() 
@@ -65,16 +65,13 @@ sub getrecords()
     
     return undef unless ($self->__STH()->rows);
     
-    my (@records, $ref);
-    while ($ref = $self->__STH()->fetchrow_arrayref())
+    my (@records);
+    while (my $ref = $self->__STH()->fetchrow_hashref())
     {
         push (@records, $ref);
     }
 
-    #   Close the statement handle
-    #$self->__STH()->finish();
-
-    return wantarray ? @records : \@records;
+    return !wantarray ? \@records : @records;
     
 }
 
@@ -92,21 +89,20 @@ sub putrecord($;\%)
 {
     my $self = shift;
     my ($record, $options) = @_;
-    my @vars;
+    
+    
+
+    
+    print 'HOPE', Dumper($options);
+    
+    my @vars = $self->_generate_query_vars(
+                            $options, $self->hash_to_array($record));
    
     #warn $self->path()->[3];
     
     $self->__STH($self->__DBH()->prepare($self->path()->[3]))
         unless $self->__STH();
-        
-    push(@vars, @{ $options->{'extra_pre_vars'} }) 
-        if (defined($options->{'extra_pre_vars'}));
-        
-    push(@vars, @{ $self->hash_to_array($record) });
-    
-    push(@vars, @{ $options->{'extra_post_vars'} }) 
-        if (defined($options->{'extra_post_vars'}));        
-    
+
     $self->__STH()->execute(@vars);
 }
 
@@ -115,8 +111,9 @@ sub putrecords()
 {
     my $self = shift;
     my ($records, $options) = @_;
-
+    
     my $query = $self->path()->[3];
+
     
     die("$self->putrecords() needs records") unless ($#{ $records }+1);
         
@@ -158,6 +155,48 @@ sub count()
     return $count;
 }
 
+
+
+
+
+sub _generate_query_vars($$)
+#   Create an ordered array of values to use in a DBI->execute() call to
+#   replace '?' in the query.
+{
+    my $self = shift;
+    my ($options, $vars) = @_;
+    my @vars;
+    
+    #   TODO: Move arrayref checking to some form of option parser 
+    
+    if (defined($options->{'extra_pre_vars'}))
+    {
+        my @pre_vars = (ref($options->{'extra_pre_vars'}) eq 'ARRAY')
+            ? @{ $options->{'extra_pre_vars'} }
+            : ($options->{'extra_pre_vars'});
+            
+        #   Add the prefix values to the beginning of the array
+        push(@vars, @pre_vars); 
+    }
+    
+    #   Put the actual values into the array (in an INSERT, putrecord() will 
+    #   send the ordered field values here)
+    push(@vars, @{ $vars });
+    
+    #   Complete the array with the suffix values
+    if (defined($options->{'extra_post_vars'}))
+    {
+        my @post_vars = (ref($options->{'extra_post_vars'}) eq 'ARRAY')
+            ? @{ $options->{'extra_post_vars'} }
+            : ($options->{'extra_post_vars'});
+            
+        #   Add the prefix values to the beginning of the array
+        push(@vars, @post_vars); 
+    }
+        
+    return wantarray ? @vars : \@vars; 
+}
+
 sub _create_dbh()
 {
     my $self = shift;
@@ -171,7 +210,7 @@ sub _create_dbh()
 sub _create_sth()
 {
     my $self = shift;
-    my $sth = $self->__DBH()->prepare($self->location());
+    my $sth = $self->__DBH()->prepare();
     
     ($sth)
         ? $self->__STH($sth)
@@ -202,6 +241,12 @@ sub _extract_fields()
 
 
 #   $Log: Database.pm,v $
+#   Revision 1.1.2.2.2.2.2.1.6.1.8.13  2004/05/10 16:29:50  dgrant
+#   - Moved to version 0.026
+#
+#   Revision 1.1.2.2.2.2.2.1.6.1.8.11  2004/05/10 04:10:06  dgrant
+#   *** empty log message ***
+#
 #   Revision 1.1.2.2.2.2.2.1.6.1.8.10  2004/05/06 15:47:45  dgrant
 #   *** empty log message ***
 #
