@@ -1,0 +1,24 @@
+Changes
+examples/classify
+examples/data_convert
+examples/data_import
+examples/dir_scan
+examples/test.tab
+lib/Data/All.pm
+lib/Data/All/Base.pm
+lib/Data/All/Format.pm
+lib/Data/All/Format/Base.pm
+lib/Data/All/Format/Delim.pm
+lib/Data/All/Format/Fixed.pm
+lib/Data/All/Format/XML.pm
+lib/Data/All/IO.pm
+lib/Data/All/IO/Base.pm
+lib/Data/All/IO/Database.pm
+lib/Data/All/IO/File.pm
+lib/Data/All/IO/Plain.pm
+lib/Data/All/Transport.pm
+Makefile.PL
+MANIFEST
+META.yml			Module meta-data (added by MakeMaker)
+README
+t/Data-All.t

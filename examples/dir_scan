@@ -1,0 +1,38 @@
+#!/usr/local/bin/perl -w
+
+#   $Id: dir_scan,v 1.1.2.1 2004/04/19 17:29:06 dgrant Exp $
+
+#   A Dir::Scan example
+
+
+
+use strict;
+use lib $ENV{'SBLIBPERL'};
+
+
+use Dir::Scan
+
+
+sub main()
+{
+    my $af = Dir::Scan->new();
+    my $files = $af->scan('/tmp');
+    
+    print $af->error(), return unless ($files);
+    
+    print join("\n", @{ $files });
+}
+
+
+main();
+
+    
+
+
+
+
+
+
+
+
+
