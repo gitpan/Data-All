@@ -2,16 +2,16 @@ package Data::All;
 
 #   Data::All - Access to data in many formats from many places
 
-#   $Id: All.pm,v 1.1.1.1.8.3 2004/04/16 20:45:03 dgrant Exp $
+#   $Id: All.pm,v 1.1.1.1.8.9 2004/04/28 23:59:09 dgrant Exp $
 
 use strict;
 use warnings;
-use diagnostics;
+#use diagnostics;
 
 use Data::All::Base '-base';    #   Spiffy
 use Data::All::IO;
 
-our $VERSION = 0.016;
+our $VERSION = 0.020;
 our @EXPORT = qw(collection);
 
 
@@ -104,48 +104,70 @@ sub read(;$$)
 }
 
 sub convert
-#   TODO: Clean up convert()
+#   Move data from one Data::All collection to another, using a simple 
+#   from (source) and to (target) metaphor
 {
     my $self = shift;
-    my @args = @_;
-    my $moniker = $self->moniker;
-    my ($from, $to, $from_records);
+    my ($args, $from, $to, $from_records, $moniker);
     
-    if (!$args[1])
-    {
+    #   We will accept both a hash as well as a hashref
+    $args = (ref($_[0]) eq 'HASH') ? $_[0] : ({ @_ });      # <--- ARGS
+
+    #   TODO: Define and apply defaults somewhere else.
+    $args->{'print_fields'} = 1;
+    $args->{'atomic'} = 0;
+
+    $moniker = $self->moniker;
+    
+    if (!exists($args->{'from'})) {
+    #   input: 'to' => hashref only
         $from = $self->__DATA()->{$moniker};
-        $self->_parse_args($args[0]);
-        $to = $self->_load_IO($args[0]);
-        
-        $from->open() unless $from->is_open();
-
-        $from_records = $from->getrecords();
-    }
-    elsif (ref($args[1]) eq 'HASH')
-    {
-        $self->_parse_args($args[0]);
-        $self->_parse_args($args[1]);
-        $from = $self->_load_IO($args[0]);
-        $to = $self->_load_IO($args[1]);
         $from->open();
-
-        $from_records = $from->getrecords();
     }
-    elsif (ref($args[1]) eq 'ARRAY')
-    {
-        $self->_parse_args($args[0]);
-        $to = $self->_load_IO($args[0]);
-        $from_records = $args[1];
+    elsif (ref($args->{'from'}) eq 'HASH') {
+    #   input: 'to' => hashref and 'from' => hashref
+        $self->_parse_args($args->{'from'});
+        $from = $self->_load_IO($args->{'from'});
+        $from->open();
     }
     
+    $self->_parse_args($args->{'to'});
+    $to = $self->_load_IO($args->{'to'});
     $to->open();
     
-    $to->fields($from->fields) unless ($#{ $to->fields() });
+    #   Use the from's field names if the to's has none
+    $to->fields($from->fields)    unless ($to->fields() && $#{ $to->fields() });
 
-    $to->putfields();
-    $to->putrecords($from_records);
+    #   Print the field names into the to
+    $to->putfields()   unless (!$args->{'print_fields'});
     
-    return;
+    if ($args->{'atomic'} == 1)
+    #   Convert data in a wholesome fashion (rather than piecemeal)
+    {
+        return (ref($args->{'from'}) eq 'ARRAY')
+            ? $to->putrecords($args->{'from'}, $args)
+            : return $to->putrecords([$from->getrecords()], $args)
+    }
+    
+    #   We are given an arrayref of (hashref) records to put to to. 
+    #   There must be a better way to do this (:?)
+    if (ref($args->{'from'}) eq 'ARRAY') {
+
+        foreach (@{ $args->{'from'} }) {
+             $to->putrecord($_, $args);
+        }
+
+    } else {
+
+        while (my $rec = $from->getrecord_hash()) {
+            $to->putrecord($rec, $args);
+        }
+    }
+    
+    $from->close();
+    $to->close();
+    
+    return 1;
 }
 
 
@@ -252,8 +274,13 @@ sub _apply_default_to()
 sub init()
 #   Rekindle all that we are
 {
-    my ($self) = @_; 
-    my $args = $self->parse_arguments(@_);
+    my $self = shift; 
+    my @args;
+    
+    #   A quick fix to allow Data::All->new() to handle a hashref
+    @args = (ref($_[0]) eq 'HASH') ? %{ $_[0] } : @_;
+    
+    my $args = $self->parse_arguments(@args);
     
     $self->_parse_args($args); 
     populate $self => $args;
@@ -305,19 +332,9 @@ internal 'default'     =>
         perm    => 'r', 
         with_original => 0 
     },
-    format  => 
-    { 
-        type    => 'delim', 
-        
-        #   TODO: fix defaults
-        #   Delim defaults
-        #break   => "\n",
-        #delim   => ',',
-        #quote   => '"',
-        #escape  => '\\',
-        
-        #   Fixed defaults, DB Defaults, XML Defaults
-        #   NONE!
+    format =>
+    {
+        type    => 'delim'
     }
 };
 
@@ -326,6 +343,13 @@ internal 'default'     =>
 
 
 #   $Log: All.pm,v $
+#   Revision 1.1.1.1.8.9  2004/04/28 23:59:09  dgrant
+#   *** empty log message ***
+#
+#   Revision 1.1.1.1.8.4  2004/04/24 01:22:35  dgrant
+#   - Added CPAN documentation to Data::All and updated the examples to be
+#   distribution friendly
+#
 #   Revision 1.1.1.1.8.3  2004/04/16 20:45:03  dgrant
 #   *** empty log message ***
 #
@@ -379,7 +403,7 @@ Data::All - Access to data in many formats from many places
 
     #   Convert $input to another format.
     #   NOTE: The hash reference here is different than the hash used by new()
-    $input->convert({path => '/tmp/file.tab', profile => 'tab'}); 
+    $input->convert(to => {path => '/tmp/file.tab', profile => 'tab'}); 
 
     #   $rec is the same above   
     #   NOTE: The hash reference here is different than the hash used by new()
@@ -447,11 +471,11 @@ Data::All - Access to data in many formats from many places
     #   $rec now contains an arrayref of hashrefs for the data defined in %db.
     my $rec  = $input1->read();
     
-    $input1->convert(\%db2);    #   Save the mysql data to a postgresql table
-    $input1->convert(\%file1);  #   And also save it to a file
+    $input1->convert(to => \%db2, $options);    #   Save the mysql data to a postgresql table
+    $input1->convert(to => \%file1);            #   And also save it to a file
     
     my $input2 = Data::All->new(%file1);    #   Open the file we just created
-    $input2->convert(\%file2);      #   And convert it to a fixed width format
+    $input2->convert(to =>\%file2);         #   And convert it to a fixed width format
     
 =head1 DESCRIPTION
 

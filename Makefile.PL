@@ -10,7 +10,10 @@ WriteMakefile(
 	'IO::All' => undef,
 	'Spiffy'  => undef,
 	'Data::Dumper' => undef,
-	'Text::ParseWords' => undef
+	'Text::ParseWords' => undef,
+	'Class::Factory' => undef,
+	'DBI'	=> undef,
+	'Log::Log4perl' => undef
     }, 
     ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM  => 'lib/Data/All.pm', # retrieve abstract from module
