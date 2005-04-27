@@ -1,6 +1,6 @@
 package Data::All::IO::Database;
 
-#   $Id: Database.pm,v 1.1.2.2.2.2.2.1.6.1.8.24 2004/05/26 07:28:02 dgrant Exp $
+#   $Id: Database.pm,v 1.1.2.2.2.2.2.1.6.1.8.27 2005/01/04 18:46:15 dgrant Exp $
 
 
 use strict;
@@ -23,18 +23,18 @@ sub open($)
     
     unless ($self->is_open())
     {
-        warn " -> Opening database connection for ", $self->ioconf()->{'perm'};
-        warn " -> path:", join ', ', @{ $self->path() };
-        warn " -> format:", $self->format()->{'type'};
-        warn " -> io:", $self->ioconf->{'type'};
+        #warn " -> Opening database connection for ", $self->ioconf()->{'perm'};
+        #warn " -> path:", join ', ', @{ $self->path() };
+        #warn " -> format:", $self->format()->{'type'};
+        #warn " -> io:", $self->ioconf->{'type'};
         
         $self->_create_dbh();               #   Open DB connection
         if ($self->ioconf()->{'perm'} =~ /r/)
         {
-            warn " -> Executing query";
+            #warn " -> Executing query";
             
             my $sth = $self->__DBH()->prepare($query);
-            $sth->execute() or warn "Can't execute statement: $DBI::errstr";
+            $sth->execute() or die "Can't execute statement: $DBI::errstr";
             $self->__STH($sth);
             $self->_extract_fields();
         }
@@ -255,6 +255,12 @@ sub _extract_fields()
 
 
 #   $Log: Database.pm,v $
+#   Revision 1.1.2.2.2.2.2.1.6.1.8.27  2005/01/04 18:46:15  dgrant
+#   *** empty log message ***
+#
+#   Revision 1.1.2.2.2.2.2.1.6.1.8.26  2004/08/12 18:40:47  dgrant
+#   *** empty log message ***
+#
 #   Revision 1.1.2.2.2.2.2.1.6.1.8.24  2004/05/26 07:28:02  dgrant
 #   *** empty log message ***
 #

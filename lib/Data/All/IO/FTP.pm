@@ -1,6 +1,6 @@
 package Data::All::IO::FTP;
 
-#   $Id: FTP.pm,v 1.1.2.3 2004/05/11 04:01:26 dgrant Exp $
+#   $Id: FTP.pm,v 1.1.2.6 2005/01/04 18:46:15 dgrant Exp $
 
 
 use strict;
@@ -28,7 +28,7 @@ sub open($)
     my $self = shift;
     my $filepath;
     
-    warn " -> Opening ftp connection ", $self->ioconf()->{'perm'};
+    #warn " -> Opening ftp connection ", $self->ioconf()->{'perm'};
     
     #   Download and open a filehandle to files for reading.
     #   Create a temporary FH for writes.
@@ -59,7 +59,7 @@ sub close()
     
     $self->_put_file() if ($self->ioconf->{'perm'} eq 'w');
     
-    warn    "Deleting temp file: ", $self->__fp(); 
+    #warn    "Deleting temp file: ", $self->__fp(); 
     unlink $self->__fp();
 }
 
@@ -70,7 +70,7 @@ sub _create_temp_file()
     
     my $fh = File::Temp->new(%{ $self->__ft_conf() });    
 
-    warn "created temp file ". $fh->filename;
+    #warn "created temp file ". $fh->filename;
     
     return $fh;
 }
@@ -90,7 +90,7 @@ sub _split_path_from_file()
     my $filepath = shift;
     my @elements = split('/', $filepath);
     my ($file, $path) = (pop(@elements), join('/', @elements));
-    warn "\n\nf:$file,p:$path";
+    #warn "\n\nf:$file,p:$path";
     return ($path, $file);
 }
 
@@ -142,6 +142,12 @@ sub _put_file()
 
 
 #   $Log: FTP.pm,v $
+#   Revision 1.1.2.6  2005/01/04 18:46:15  dgrant
+#   *** empty log message ***
+#
+#   Revision 1.1.2.5  2004/08/12 18:40:47  dgrant
+#   *** empty log message ***
+#
 #   Revision 1.1.2.3  2004/05/11 04:01:26  dgrant
 #   *** empty log message ***
 #

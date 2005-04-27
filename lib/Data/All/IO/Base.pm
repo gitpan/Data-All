@@ -2,7 +2,7 @@ package Data::All::IO::Base;
 
 #   Base package for all format modules
 
-#   $Id: Base.pm,v 1.1.1.1.8.8 2004/05/20 17:43:40 dgrant Exp $
+#   $Id: Base.pm,v 1.1.1.1.8.13 2005/01/04 18:46:15 dgrant Exp $
 
 use strict;
 use warnings;
@@ -70,7 +70,7 @@ sub getrecords(;$$)
 
     my (@records);
     
-    warn ' -> using fields:', join(',', @{ $self->fields });
+    #warn ' -> using fields:', join(',', @{ $self->fields });
     
     while (my $record = $self->getrecord_hash())
     { 
@@ -92,7 +92,7 @@ sub putrecords()
 
     die("$self->putrecords() needs records") unless ($#{ $records }+1);
         
-    warn "Writing $count records from $start";
+    #warn "Writing $count records from $start";
     
     my $record;
     while ($count--)
@@ -132,6 +132,12 @@ internal 'added_fields'         => {};
 
 
 #   $Log: Base.pm,v $
+#   Revision 1.1.1.1.8.13  2005/01/04 18:46:15  dgrant
+#   *** empty log message ***
+#
+#   Revision 1.1.1.1.8.12  2004/08/12 18:40:47  dgrant
+#   *** empty log message ***
+#
 #   Revision 1.1.1.1.8.8  2004/05/20 17:43:40  dgrant
 #   *** empty log message ***
 #

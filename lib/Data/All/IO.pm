@@ -1,6 +1,6 @@
 package Data::All::IO;
 
-#   $Id: IO.pm,v 1.1.1.1.8.3 2004/05/10 04:10:05 dgrant Exp $
+#   $Id: IO.pm,v 1.1.1.1.8.7 2004/08/12 18:40:46 dgrant Exp $
 
 use strict;
 
@@ -23,6 +23,9 @@ sub new()
 
 
 #   $Log: IO.pm,v $
+#   Revision 1.1.1.1.8.7  2004/08/12 18:40:46  dgrant
+#   *** empty log message ***
+#
 #   Revision 1.1.1.1.8.3  2004/05/10 04:10:05  dgrant
 #   *** empty log message ***
 #

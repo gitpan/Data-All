@@ -1,7 +1,7 @@
 package Data::All::Format::Delim;
 
 
-#   $Id: Delim.pm,v 1.1.1.1.8.4 2004/05/17 23:27:17 dgrant Exp $
+#   $Id: Delim.pm,v 1.1.1.1.8.9 2004/08/25 23:17:51 dgrant Exp $
 
 #   TODO: fully implement add_quotes attribute
 
@@ -19,7 +19,7 @@ $VERSION = 0.10;
 attribute 'delim'   => ',';
 attribute 'quote'   => '"';
 attribute 'escape'  => '\\';
-attribute 'break'   => '\n';
+attribute 'break'   => "\n";
 attribute 'add_quotes' => 1;
 
 
@@ -133,6 +133,12 @@ sub contract(\@)
 
 
 #   $Log: Delim.pm,v $
+#   Revision 1.1.1.1.8.9  2004/08/25 23:17:51  dgrant
+#   - Changed default line break to "\n" rather than '\n'
+#
+#   Revision 1.1.1.1.8.8  2004/08/12 18:40:46  dgrant
+#   *** empty log message ***
+#
 #   Revision 1.1.1.1.8.4  2004/05/17 23:27:17  dgrant
 #   - Misc cleanup, no changes
 #

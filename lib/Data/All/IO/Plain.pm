@@ -1,6 +1,6 @@
 package Data::All::IO::Plain;
 
-#   $Id: Plain.pm,v 1.1.2.1.2.1.2.1.6.2.4.1.4.14 2004/05/20 17:45:09 dgrant Exp $
+#   $Id: Plain.pm,v 1.1.2.1.2.1.2.1.6.2.4.1.4.17 2005/01/04 18:46:15 dgrant Exp $
 
 #   BUG: A leading delimiter (i.e. a blank first column) will fuck it up
 
@@ -30,10 +30,10 @@ sub open($)
     
     unless ($self->is_open())
     {
-        warn " -> Opening $path for ", $self->ioconf()->{'perm'};
-        warn " -> path:", join ', ', @{ $self->path() };
-        warn " -> format:", $self->format()->{'type'};
-        warn " -> io:", $self->ioconf->{'type'};
+        #warn " -> Opening $path for ", $self->ioconf()->{'perm'};
+        #warn " -> path:", join ', ', @{ $self->path() };
+        #warn " -> format:", $self->format()->{'type'};
+        #warn " -> io:", $self->ioconf->{'type'};
     
         die("The file: $path does not exist")
             if (($self->ioconf()->{'perm'} eq 'r') && !(-f $path));
@@ -150,6 +150,12 @@ sub count()
 sub _next()      { $_[0]->__curpos( $_[0]->__curpos() + 1) }
 
 #   $Log: Plain.pm,v $
+#   Revision 1.1.2.1.2.1.2.1.6.2.4.1.4.17  2005/01/04 18:46:15  dgrant
+#   *** empty log message ***
+#
+#   Revision 1.1.2.1.2.1.2.1.6.2.4.1.4.16  2004/08/12 18:40:48  dgrant
+#   *** empty log message ***
+#
 #   Revision 1.1.2.1.2.1.2.1.6.2.4.1.4.14  2004/05/20 17:45:09  dgrant
 #   - Added Data::All::store()
 #   - Some bug fixes

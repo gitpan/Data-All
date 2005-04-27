@@ -1,6 +1,6 @@
 package Data::All::Format;
 
-#   $Id: Format.pm,v 1.1.1.1.8.3 2004/05/15 20:08:29 dgrant Exp $
+#   $Id: Format.pm,v 1.1.1.1.8.7 2004/08/12 18:40:46 dgrant Exp $
 
 use strict;
 
@@ -36,6 +36,9 @@ sub new()
 
 
 #   $Log: Format.pm,v $
+#   Revision 1.1.1.1.8.7  2004/08/12 18:40:46  dgrant
+#   *** empty log message ***
+#
 #   Revision 1.1.1.1.8.3  2004/05/15 20:08:29  dgrant
 #   - Added version number
 #

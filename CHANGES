@@ -1,5 +1,8 @@
 Revision history for Perl extension Data::All.
 
+0.032  Web Apr 27 15:48:22 2005
+    - Commented out several troublesome warns()
+
 0.031  Mon May 17 15:46:29 2004
 	- Overhauled interface to Data::All
 		- The usage of from => ..., to => ... now standardized

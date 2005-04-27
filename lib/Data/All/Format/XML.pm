@@ -1,7 +1,7 @@
 package Data::All::Format::XML;
 
 
-#   $Id: XML.pm,v 1.1.1.1.8.1 2004/04/16 17:10:34 dgrant Exp $
+#   $Id: XML.pm,v 1.1.1.1.8.3 2004/08/12 18:40:47 dgrant Exp $
 
 
 use strict;
@@ -69,6 +69,9 @@ sub pack_template()
 
 
 #   $Log: XML.pm,v $
+#   Revision 1.1.1.1.8.3  2004/08/12 18:40:47  dgrant
+#   *** empty log message ***
+#
 #   Revision 1.1.1.1.8.1  2004/04/16 17:10:34  dgrant
 #   - Merging libperl-016 changes into the libperl-1-current trunk
 #

@@ -2,7 +2,7 @@ package Data::All;
 
 #   Data::All - Access to data in many formats from many places
 
-#   $Id: All.pm,v 1.1.1.1.8.30 2004/05/26 07:28:02 dgrant Exp $
+#   $Id: All.pm,v 1.1.1.1.8.36 2004/09/07 00:43:08 dgrant Exp $
 
 #   TODO: Create Data::All::IO::Hash for internal storage
 #   TODO: Add checking for output field names that aren't present in input field names
@@ -15,7 +15,7 @@ use warnings;
 use Data::All::Base '-base';    #   Spiffy
 use Data::All::IO;
 
-our $VERSION = 0.032;
+our $VERSION = 0.034;
 our @EXPORT = qw(collection);
 
 
@@ -36,7 +36,7 @@ sub open;
 ##  External Structure
 attribute         'from';
 attribute           'to';
-attribute 'print_fields'        => 1;
+attribute 'print_fields'        => 0;
 attribute       'atomic'        => 0;
 
 
@@ -159,11 +159,11 @@ sub getrecord(;$$)
     my $meth = 'getrecord_' . $type;
     my $record;
     
-    $record = ($self->__collection()->{'from'}->can($meth))
-        ? $self->__collection()->{'from'}->$meth()
-        : undef;
-    
-    return $record;
+#    $record = ($self->__collection()->{'from'}->can($meth))
+#        ? $self->__collection()->{'from'}->$meth()
+#        : undef;
+
+    return $self->__collection()->{'from'}->getrecord_hash();
 }
 
 sub putrecord()
@@ -451,6 +451,17 @@ BEGIN {
 
 
 #   $Log: All.pm,v $
+#   Revision 1.1.1.1.8.36  2004/09/07 00:43:08  dgrant
+#   - Changed print_fields to default to 0
+#
+#   Revision 1.1.1.1.8.35  2004/08/18 18:13:01  dgrant
+#   - Tweaked getrecord(), removed if () test to see if the collection can get a
+#   record of the requested type. It is either going to be a hashref (hardcoded) or
+#   an arrayref (possible, but not currently reflected)
+#
+#   Revision 1.1.1.1.8.34  2004/08/12 18:40:45  dgrant
+#   *** empty log message ***
+#
 #   Revision 1.1.1.1.8.30  2004/05/26 07:28:02  dgrant
 #   *** empty log message ***
 #
