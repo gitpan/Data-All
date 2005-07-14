@@ -2,7 +2,7 @@ package Data::All;
 
 #   Data::All - Access to data in many formats from many places
 
-#   $Id: All.pm,v 1.1.1.1.8.36 2004/09/07 00:43:08 dgrant Exp $
+#   $Id: All.pm,v 1.1.1.1 2005/05/10 23:56:20 dgrant Exp $
 
 #   TODO: Create Data::All::IO::Hash for internal storage
 #   TODO: Add checking for output field names that aren't present in input field names
@@ -15,7 +15,7 @@ use warnings;
 use Data::All::Base '-base';    #   Spiffy
 use Data::All::IO;
 
-our $VERSION = 0.034;
+our $VERSION = 0.035;
 our @EXPORT = qw(collection);
 
 
@@ -312,8 +312,9 @@ sub convert
         { $bool = $to->putrecord($rec, $args) }
     }
     
-    $to->close();
-    $from->close();
+    #   BUG: I commented this out for the extract specifically (delano - May 9) 
+    #$to->close();
+    #$from->close();
     
     return $bool;
 }
@@ -451,6 +452,9 @@ BEGIN {
 
 
 #   $Log: All.pm,v $
+#   Revision 1.1.1.1  2005/05/10 23:56:20  dgrant
+#   initial import
+#
 #   Revision 1.1.1.1.8.36  2004/09/07 00:43:08  dgrant
 #   - Changed print_fields to default to 0
 #
@@ -531,6 +535,18 @@ __END__
 =head1 NAME
 
 Data::All - Access to data in many formats from many places
+
+=head1 WARNING!
+I have added versions of IO::All and Spiffy to the Data:All 
+distribution b/c it requires these specific versions and 
+the Data::All rewrite that doesn't use IO:All is incomplete. 
+This could overwrite newer versions of these modules you
+currently have installed. If you still want to use Data::All
+I recommend installing it to a non-standard location such
+as under your project/lib directory using something like:
+
+$ perl Makefile.PL PREFIX=/path/to/install
+
 
 =head1 SYNOPSIS 1 (short)
 

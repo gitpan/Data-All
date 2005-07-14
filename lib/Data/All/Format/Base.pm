@@ -2,7 +2,7 @@ package Data::All::Format::Base;
 
 #   Base package for all format modules
 
-#   $Id: Base.pm,v 1.1.1.1.8.3 2004/08/12 18:40:46 dgrant Exp $
+#   $Id: Base.pm,v 1.1.1.1 2005/05/10 23:56:20 dgrant Exp $
 
 use strict;
 use warnings;
@@ -28,6 +28,9 @@ sub init()
 
 
 #   $Log: Base.pm,v $
+#   Revision 1.1.1.1  2005/05/10 23:56:20  dgrant
+#   initial import
+#
 #   Revision 1.1.1.1.8.3  2004/08/12 18:40:46  dgrant
 #   *** empty log message ***
 #

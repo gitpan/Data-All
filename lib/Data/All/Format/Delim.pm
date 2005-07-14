@@ -1,7 +1,7 @@
 package Data::All::Format::Delim;
 
 
-#   $Id: Delim.pm,v 1.1.1.1.8.9 2004/08/25 23:17:51 dgrant Exp $
+#   $Id: Delim.pm,v 1.1.1.1 2005/05/10 23:56:20 dgrant Exp $
 
 #   TODO: fully implement add_quotes attribute
 
@@ -34,6 +34,7 @@ sub expand($)
     my ($self, $raw) = @_;
     my $record = $raw;
     
+    $record =~ s/\"\"(..)\'\'/$1/;
     #   BUG: in Text::Parsewords work around
     $record =~ s/'/\\'/g if ($raw =~ /'/);
     
@@ -133,6 +134,9 @@ sub contract(\@)
 
 
 #   $Log: Delim.pm,v $
+#   Revision 1.1.1.1  2005/05/10 23:56:20  dgrant
+#   initial import
+#
 #   Revision 1.1.1.1.8.9  2004/08/25 23:17:51  dgrant
 #   - Changed default line break to "\n" rather than '\n'
 #

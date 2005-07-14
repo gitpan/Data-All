@@ -1,4 +1,5 @@
 CHANGES
+lib/Data/Access.pm
 lib/Data/All.pm
 lib/Data/All/Base.pm
 lib/Data/All/Format.pm
@@ -11,6 +12,31 @@ lib/Data/All/IO/Base.pm
 lib/Data/All/IO/Database.pm
 lib/Data/All/IO/FTP.pm
 lib/Data/All/IO/Plain.pm
+lib/IO/All.pm
+lib/IO/All.pod
+lib/IO/All/DBM.pm
+lib/IO/All/Dir.pm
+lib/IO/All/File.pm
+lib/IO/All/Filesys.pm
+lib/IO/All/Link.pm
+lib/IO/All/MLDBM.pm
+lib/IO/All/Pipe.pm
+lib/IO/All/Socket.pm
+lib/IO/All/STDIO.pm
+lib/IO/All/String.pm
+lib/IO/All/Temp.pm
+lib/IO/AtomicFile.pm
+lib/IO/Events.pm
+lib/IO/InnerFile.pm
+lib/IO/Lines.pm
+lib/IO/Scalar.pm
+lib/IO/Scalar.pm.html
+lib/IO/ScalarArray.pm
+lib/IO/String.pm
+lib/IO/Stringy.pm
+lib/IO/Wrap.pm
+lib/IO/WrapTie.pm
+lib/Spiffy.pm
 Makefile.PL
 MANIFEST			This list of files
 META.yml

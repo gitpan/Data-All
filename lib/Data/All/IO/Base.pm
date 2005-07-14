@@ -2,7 +2,7 @@ package Data::All::IO::Base;
 
 #   Base package for all format modules
 
-#   $Id: Base.pm,v 1.1.1.1.8.13 2005/01/04 18:46:15 dgrant Exp $
+#   $Id: Base.pm,v 1.1.1.1 2005/05/10 23:56:20 dgrant Exp $
 
 use strict;
 use warnings;
@@ -132,6 +132,9 @@ internal 'added_fields'         => {};
 
 
 #   $Log: Base.pm,v $
+#   Revision 1.1.1.1  2005/05/10 23:56:20  dgrant
+#   initial import
+#
 #   Revision 1.1.1.1.8.13  2005/01/04 18:46:15  dgrant
 #   *** empty log message ***
 #

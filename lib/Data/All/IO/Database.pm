@@ -1,6 +1,6 @@
 package Data::All::IO::Database;
 
-#   $Id: Database.pm,v 1.1.2.2.2.2.2.1.6.1.8.27 2005/01/04 18:46:15 dgrant Exp $
+#   $Id: Database.pm,v 1.1.1.1 2005/05/10 23:56:20 dgrant Exp $
 
 
 use strict;
@@ -49,7 +49,8 @@ sub close()
 {
     my $self = shift;
 
-    $self->__STH()->finish(), $self->__DBH()->commit()
+    $self->__STH()->finish()
+    , $self->__DBH()->commit()     #   NOTE: uncomment this if autocommit = 0
         if ($self->__STH());
 
     $self->__DBH()->disconnect();
@@ -235,6 +236,7 @@ sub _db_connect()
 {
     my $self = shift;
     return if ($self->is_open());
+    #   NOTE: See line 53 if you want to set autocommit = 0
     return DBI->connect($self->_create_connect(), { PrintWarn=>1,PrintError=>1, RaiseError => 1, AutoCommit => 0 });
 }
 
@@ -255,6 +257,9 @@ sub _extract_fields()
 
 
 #   $Log: Database.pm,v $
+#   Revision 1.1.1.1  2005/05/10 23:56:20  dgrant
+#   initial import
+#
 #   Revision 1.1.2.2.2.2.2.1.6.1.8.27  2005/01/04 18:46:15  dgrant
 #   *** empty log message ***
 #

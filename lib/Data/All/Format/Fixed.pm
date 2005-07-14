@@ -1,7 +1,7 @@
 package Data::All::Format::Fixed;
 
 
-#   $Id: Fixed.pm,v 1.1.1.1.8.5 2004/08/12 18:40:47 dgrant Exp $
+#   $Id: Fixed.pm,v 1.1.1.1 2005/05/10 23:56:20 dgrant Exp $
 
 
 use strict;
@@ -72,6 +72,9 @@ sub pack_template()
 
 
 #   $Log: Fixed.pm,v $
+#   Revision 1.1.1.1  2005/05/10 23:56:20  dgrant
+#   initial import
+#
 #   Revision 1.1.1.1.8.5  2004/08/12 18:40:47  dgrant
 #   *** empty log message ***
 #

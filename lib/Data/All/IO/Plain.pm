@@ -1,6 +1,6 @@
 package Data::All::IO::Plain;
 
-#   $Id: Plain.pm,v 1.1.2.1.2.1.2.1.6.2.4.1.4.17 2005/01/04 18:46:15 dgrant Exp $
+#   $Id: Plain.pm,v 1.1.1.1 2005/05/10 23:56:20 dgrant Exp $
 
 #   BUG: A leading delimiter (i.e. a blank first column) will fuck it up
 
@@ -150,6 +150,9 @@ sub count()
 sub _next()      { $_[0]->__curpos( $_[0]->__curpos() + 1) }
 
 #   $Log: Plain.pm,v $
+#   Revision 1.1.1.1  2005/05/10 23:56:20  dgrant
+#   initial import
+#
 #   Revision 1.1.2.1.2.1.2.1.6.2.4.1.4.17  2005/01/04 18:46:15  dgrant
 #   *** empty log message ***
 #
