@@ -1,12 +1,7 @@
 Revision history for Perl extension Data::All.
 
-0.035  Thu Jul 14 11:42:01 2005
-    - Added IO::All and Spiffy versions to distribution b/c it 
-      requires a specific version. WARNING: This could install 
-      versions of these modules that are older than you 
-      currently have installed. If you want to use Data::All
-      I recommend installing it to a non-standard location such
-      as under your project/lib directory.
+0.036  Fri Jul 15 16:01:10 2005
+    - Spelling correction
 
 0.032  Wed Apr 27 15:48:22 2005
     - Commented out several troublesome warns()
