@@ -14,7 +14,7 @@ use Data::Dumper;
 use Data::All::Base;
 use Data::All::IO;
 
-our $VERSION = 0.040;
+our $VERSION = 0.041;
 our @EXPORT = qw(collection);
 
 ##  PUBLIC INTERFACE
@@ -41,8 +41,6 @@ attribute           'atomic' => 1;
 ##  PRIVATE ATTRIBUTES
 
 #   Contains Data::All::IO::* object by moniker
-internal 'ERROR' 			 => [];
-
 internal 'collection'        => {};  
 
 internal 'profile'     =>      
@@ -192,7 +190,7 @@ sub _parse_args()
     return if ($args->{'moniker'});
     
     $args->{'moniker'} = ($args->{'ioconf'}->{'type'} ne 'db')
-        ? $args->{'path'}
+        ? join('', @{ $args->{'path'} })
         : '_';
     
 }
