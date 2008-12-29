@@ -1,12 +1,12 @@
 package Data::All::IO::Database;
 
-#   $Id: Database.pm,v 1.1.1.1 2005/05/10 23:56:20 dgrant Exp $
+#   $Id: Database.pm,v 1.1.1.1 2005/05/10 23:56:20 dmandelbaum Exp $
 
 
 use strict;
-use warnings;
+no warnings;
 
-use Data::All::IO::Base '-base';
+use Data::All::IO::Base;
 use DBI;
 
 our $VERSION = 0.16;
@@ -14,7 +14,12 @@ our $VERSION = 0.16;
 attribute '__DBH';
 attribute '__STH';
 
+attribute 'format';
+attribute 'fields';
+attribute 'ioconf';
+attribute   'path';
 
+attribute 'is_open'             => 0;
 
 sub open($)
 {
@@ -77,7 +82,7 @@ sub getrecord_array()
     return !wantarray ? $record : @{ $record };
 }
 
-sub getrecords() 
+sub getrecords
 { 
     my $self = shift;
     
@@ -254,78 +259,6 @@ sub _extract_fields()
     $self->fields($self->__STH()->{'NAME'});
 }
 
-
-
-#   $Log: Database.pm,v $
-#   Revision 1.1.1.1  2005/05/10 23:56:20  dgrant
-#   initial import
-#
-#   Revision 1.1.2.2.2.2.2.1.6.1.8.27  2005/01/04 18:46:15  dgrant
-#   *** empty log message ***
-#
-#   Revision 1.1.2.2.2.2.2.1.6.1.8.26  2004/08/12 18:40:47  dgrant
-#   *** empty log message ***
-#
-#   Revision 1.1.2.2.2.2.2.1.6.1.8.24  2004/05/26 07:28:02  dgrant
-#   *** empty log message ***
-#
-#   Revision 1.1.2.2.2.2.2.1.6.1.8.22  2004/05/20 17:43:41  dgrant
-#   *** empty log message ***
-#
-#   Revision 1.1.2.2.2.2.2.1.6.1.8.21  2004/05/19 16:58:03  dgrant
-#   *** empty log message ***
-#
-#   Revision 1.1.2.2.2.2.2.1.6.1.8.20  2004/05/17 23:27:17  dgrant
-#   - Misc cleanup, no changes
-#
-#   Revision 1.1.2.2.2.2.2.1.6.1.8.19  2004/05/15 04:08:27  dgrant
-#   *** empty log message ***
-#
-#   Revision 1.1.2.2.2.2.2.1.6.1.8.18  2004/05/13 00:23:56  dgrant
-#   - Bug fix: count() was not returning results properly and now displays the
-#   correct record count for read queries only
-#
-#   Revision 1.1.2.2.2.2.2.1.6.1.8.17  2004/05/12 03:34:55  dgrant
-#   *** empty log message ***
-#
-#   Revision 1.1.2.2.2.2.2.1.6.1.8.16  2004/05/11 21:55:42  dgrant
-#   - Bug fix: open() executed the query if it looked like a SELECT
-#       instead of where ioconf said read or write. In postgresql, 
-#       SELECTs can be used with functions for inserting which is a
-#       write. 
-#   
-#   Revision 1.1.2.2.2.2.2.1.6.1.8.13  2004/05/10 16:29:50  dgrant
-#   - Moved to version 0.026
-#
-#   Revision 1.1.2.2.2.2.2.1.6.1.8.8  2004/05/05 16:46:49  dgrant
-#   - Misc changes I should have commited on Friday when I made them.
-#
-#   Revision 1.1.2.2.2.2.2.1.6.1.8.3  2004/04/28 23:51:43  dgrant
-#   - Added transaction support
-#
-#   Revision 1.1.2.2.2.2.2.1.6.1  2004/04/08 23:08:56  dgrant
-#   - Renamed getrecord() as getrecord_array()
-#
-#   Revision 1.1.2.2.2.2.2.1  2004/04/06 00:12:54  dgrant
-#   - pre-011 version commit
-#
-#   Revision 1.1.2.2.2.2  2004/04/05 23:01:47  dgrant
-#   - Database currently not working, but delim to delim is
-#   - convert() works
-#   - See examples/1 for working example
-#
-#   Revision 1.1.2.2.2.1  2004/03/31 22:36:26  dgrant
-#   ongoing...
-
-#   Revision 1.1.2.1  2004/03/26 21:36:53  dgrant
-#   - Added IO::Database
-#   - NOTE: Not currently functioning
-#
-#   Revision 1.1.1.1.2.1  2004/03/25 01:47:11  dgrant
-#   - Initial import of modules
-#   - Included CVS Id and Log variables
-#   - Added use strict; to a few unlucky modules
-#
 
 
 1;
